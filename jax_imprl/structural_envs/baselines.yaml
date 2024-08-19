@@ -1,0 +1,56 @@
+k_out_of_n:
+    hard-1-of-5:
+        FailureReplace: 
+            mean: 1503.9
+            stderr: 4.3
+        TPI-CBM: 
+            mean: 1485.74
+            stderr: 4.3
+        DRL:
+            mean: 285.64
+            stderr: 4.06
+
+    hard-2-of-5:
+        FailureReplace: 
+            mean: 1502.8
+            stderr: 4.4
+        TPI-CBM: 
+            mean: 1498.8
+            stderr: 4.4
+        DRL:
+            mean: 732.62
+            stderr: 6.88
+        
+    hard-3-of-5:
+        FailureReplace: 
+            mean: 1658
+            stderr: 7.2
+        TPI-CBM: 
+            mean: 1654.19
+            stderr: 7.2
+        DRL:
+            mean: 1578.24
+            stderr: 7.59
+
+    hard-4-of-5:
+        FailureReplace: 
+            mean: 4040.2
+            stderr: 22.2
+        TPI-CBM: 
+            mean: 3998.41
+            stderr: 22.2
+        DRL:
+            mean: 3384.11
+            stderr: 16.8
+
+    hard-5-of-5:
+        FailureReplace:     
+            mean: 23825.1
+            stderr: 50.3 
+        TPI-CBM: 
+            mean: 19728.42
+            stderr: 48.7
+        DRL:
+            mean: 12509.88
+            stderr: 34.04
+        
