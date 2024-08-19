@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "jax-imprl"
+version = "0.1.0"
+description = "A jax accelerated library for applying reinforcement learning to inspection and maintenance planning of deteriorating engineering systems."
+authors = ["Prateek Bhustali <p.bhustali@tudelft.nl>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python="~3.9"
+numpy="^1.26.2"
+pyyaml="~6.0.1"
+gym="^0.23.1"
+notebook="^7.1.2"
+jax=[{extras = ["cpu"], version = "^0.4.28", platform="darwin"},
+    {extras = ["cuda"], version = "^0.4.28", platform="linux"}]
+chex="~0.1.84"
+gymnax="~0.0.1"
+flashbax="~0.1.2"
+
+[tool.poetry.group.logging]
+optional = false
+[tool.poetry.group.logging.dependencies]
+wandb="~0.16.4"
+
+[tool.poetry.group.visualisation]
+optional = false
+[tool.poetry.group.visualisation.dependencies]
+matplotlib="^3.8.2"
+seaborn="^0.13.2"
+
+[tool.poetry.group.dev]
+optional = true
+[tool.poetry.group.dev.dependencies]
+pytest="~8.0.1"
+black="^24.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
