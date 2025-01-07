@@ -1,0 +1,18 @@
+# Environment settings
+ENV_NAME: "k_out_of_n_infinite"
+ENV_SETTING: "1-of-4_infinite"
+ENV_KWARGS: 
+  reward_shaping: True
+
+# wandb settings
+WANDB: True
+WANDB_ENTITY: "shaktimaan"
+WANDB_PROJECT: "jax_imprl"
+
+# Logging settings
+SEED: 42 # seed to generate random key
+NUM_RUNS: 10 # num independent runs, it splits the random key into multiple keys
+NUM_EPISODES: 50_000 # number of training episodes
+LOGGING_FREQ: 100 # episodes
+EVAL_FREQ: 5_000 # episodes
+EVAL_EPISODES: 10_000 # episodes

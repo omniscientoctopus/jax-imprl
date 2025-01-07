@@ -1,0 +1,22 @@
+ALGORITHM: DDQN
+
+NUM_TIMESTEPS: 2_500_000 # timesteps
+NUM_EPISODES: 50_000
+MAX_MEMORY_SIZE: 10_000 # transitions
+BATCH_SIZE: 64 # transitions
+TARGET_UPDATE_FREQ: 50 # episodes
+DISCOUNT_FACTOR: 0.8
+
+NETWORK_CONFIG:
+    hidden_layers: [64, 64]
+    optimizer: Adam
+    lr_scheduler: LinearLR
+    lr_initial: 0.001
+    lr_final: 0.0001
+    lr_total_iters: 500_000
+
+EXPLORATION_STRATEGY:
+      name: epsilon_greedy
+      initial_value: 1
+      final_value: 0.005
+      num_steps: 500_000
