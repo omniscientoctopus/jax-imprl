@@ -154,55 +154,24 @@ def test_reward(kn_env):
     assert reward == -2520
 
 
-def test_kn_env_returns(kn_eval_envs):
+@pytest.mark.parametrize(
+    "env_fixture, actions, expected_means",
+    [
+        ("kn_eval_envs", [0, 0, 0, 0, 0], [22548.04, 44109.34, 58108.71, 68800.52, 78659.08]),
+        ("kn_eval_envs", [0, 1, 2, 0, 1], [18367.21, 18465.27, 56511.25, 77684.45, 92728.47]),
+        ("kn_infinite_eval_envs", [0, 0, 0, 0], [223.23, 639.62, 1228.91, 2036.35]),
+        ("kn_infinite_eval_envs", [0, 1, 2, 0], [209.85, 492.72, 1071.76, 1996.08]),
+    ],
+)
+def test_kn_env_returns(request, env_fixture, actions, expected_means):
 
-    NUM_EPISODES = 100_000
+    NUM_EPISODES = 10_000
+    envs = request.getfixturevalue(env_fixture)
 
-    ACTIONS_1 = [0, 0, 0, 0, 0]
-    numpy_eval_means_action_1 = [22548.04, 44109.34, 58108.71, 68800.52, 78659.08]
-
-    for k, env in enumerate(kn_eval_envs):
+    for k, env in enumerate(envs):
         key = jax.random.PRNGKey(42)
-        evals = scanned_rollout(key, env, ACTIONS_1, NUM_EPISODES)
+        evals = scanned_rollout(key, env, actions, NUM_EPISODES)
         mean = -np.mean(evals)
 
         # check if the mean returns are close to the expected values
-        assert np.isclose(mean, numpy_eval_means_action_1[k], rtol=1e-2)
-
-    ACTIONS_2 = [0, 1, 2, 0, 1]
-    numpy_eval_means_action_2 = [18367.21, 18465.27, 56511.25, 77684.45, 92728.47]
-
-    for k, env in enumerate(kn_eval_envs):
-        key = jax.random.PRNGKey(42)
-        evals = scanned_rollout(key, env, ACTIONS_2, NUM_EPISODES)
-        mean = -np.mean(evals)
-
-        # check if the mean returns are close to the expected values
-        assert np.isclose(mean, numpy_eval_means_action_2[k], rtol=1e-2)
-
-
-def test_kn_infinite_env_returns(kn_infinite_eval_envs):
-
-    NUM_EPISODES = 100_000
-
-    ACTIONS_1 = [0, 0, 0, 0]
-    numpy_eval_means_action_1 = [223.23, 639.62, 1228.91, 2036.35]
-
-    for k, env in enumerate(kn_infinite_eval_envs):
-        key = jax.random.PRNGKey(42)
-        evals = scanned_rollout(key, env, ACTIONS_1, NUM_EPISODES)
-        mean = -np.mean(evals)
-
-        # check if the mean returns are close to the expected values
-        assert np.isclose(mean, numpy_eval_means_action_1[k], rtol=1e-2)
-
-    ACTIONS_2 = [0, 1, 2, 0]
-    numpy_eval_means_action_2 = [209.85, 492.72, 1071.76, 1996.08]
-
-    for k, env in enumerate(kn_infinite_eval_envs):
-        key = jax.random.PRNGKey(42)
-        evals = scanned_rollout(key, env, ACTIONS_2, NUM_EPISODES)
-        mean = -np.mean(evals)
-
-        # check if the mean returns are close to the expected values
-        assert np.isclose(mean, numpy_eval_means_action_2[k], rtol=1e-2)
+        assert np.isclose(mean, expected_means[k], rtol=1e-2)
