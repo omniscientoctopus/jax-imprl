@@ -22,7 +22,7 @@ class EnvState:
     damage_state: jnp.array
     observation: jnp.array
     belief: jnp.array
-    timestep: float = 0.0
+    timestep: int = 0
     episode_return: float = 0.0
 
 
@@ -49,10 +49,12 @@ class JaxKOutOfN:
         eval_env=False,
         wrapper="Filter",
         reward_shaping: bool = False,
+        collect_data: bool = False,
     ):
 
         self.wrapper = wrapper
         self.reward_shaping = reward_shaping
+        self.collect_data = collect_data
 
         # time limits for training and evaluation
         train_time_horizon = 50  # training time limit per episode
@@ -280,18 +282,37 @@ class JaxKOutOfN:
         return _penalty
 
     def calculate_reward(self, state, belief, action) -> float:
-        action_rewards = self._compute_action_rewards(self.component_list, action).sum(
-            axis=0
-        )
+        if self.collect_data:
+            # shape: (n_components, n_comp_actions)
+            onehot_action = jax.nn.one_hot(
+                action, self.n_comp_actions, dtype=jnp.float32
+            )
+            # shape: (n_components, n_comp_actions)
+            per_action_rewards = jnp.sum(onehot_action * self.reward_model, axis=0)
+            action_rewards = jnp.sum(per_action_rewards)
+        else:
+            action_rewards = self._compute_action_rewards(
+                self.component_list, action
+            ).sum(axis=0)
 
-        # System rewards
-        state_rewards = self._compute_state_rewards(state.damage_state, belief)
+        # System reward
+        state_reward = self._compute_state_rewards(state.damage_state, belief)
 
         # Mobilisation reward
         mobilised = jnp.greater(jnp.sum(action), 0)
         mobilisation_reward = mobilised * self.mobilisation_reward
 
-        reward = action_rewards + state_rewards + mobilisation_reward
+        reward = action_rewards + state_reward + mobilisation_reward
+
+        if self.collect_data:
+            reward_info = {
+                "reward_mobilisation": mobilisation_reward,
+                "reward_penalties": state_reward,
+                "reward_replacements": per_action_rewards[1],
+                "reward_inspections": per_action_rewards[2],
+            }
+            return reward, reward_info
+
         return reward
 
     def calculate_returns(self, state, reward):
@@ -343,7 +364,10 @@ class JaxKOutOfN:
         )
 
         # rewards
-        reward = self.calculate_reward(state, belief, action)
+        if self.collect_data:
+            reward, reward_info = self.calculate_reward(state, belief, action)
+        else:
+            reward = self.calculate_reward(state, belief, action)
 
         # returns
         returns = self.calculate_returns(state, reward)
@@ -355,7 +379,10 @@ class JaxKOutOfN:
         done = jnp.logical_or(terminated, truncated)
 
         # info
-        info = {"returns": returns}
+        if self.collect_data:
+            info = {"returns": returns, **reward_info}
+        else:
+            info = {"returns": returns}
 
         next_state = EnvState(
             damage_state=next_damage_state,
