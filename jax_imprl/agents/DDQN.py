@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 
+import flax
 import orbax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
@@ -11,6 +12,7 @@ from jax_imprl import MLP, Agent, TransitionTuple, RunnerState, EvalRunnerState
 
 class RunnerState(RunnerState):
     QState: TrainState
+    target_network_params: flax.core.FrozenDict
 
 
 class EvalRunnerState(EvalRunnerState):

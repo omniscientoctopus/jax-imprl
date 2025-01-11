@@ -27,7 +27,6 @@ class RunnerState:
     env_state: Any
     obs: chex.Array
     buffer_state: Any
-    target_network_params: flax.core.FrozenDict
     ep: int = 0
     total_timesteps: int = 0
 
