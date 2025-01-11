@@ -4,6 +4,7 @@ from functools import partial
 
 import flax
 import orbax
+import optax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
@@ -35,7 +36,18 @@ class DDQN(Agent):
         _output = self.env.action_space().n
         self.q_network = MLP([_input] + _hidden + [_output])
 
-    def init_q_params(self, key):
+        # initialize learning rate scheduler
+        self.lr_scheduler = optax.schedules.linear_schedule(
+            init_value=config["NETWORK_CONFIG"]["lr_initial"],
+            end_value=config["NETWORK_CONFIG"]["lr_final"],
+            transition_steps=self.to_num_timesteps(
+                config["NETWORK_CONFIG"]["lr_total_iters"]
+            ),
+        )
+        # initialize optimizer
+        self.optimizer = optax.adam(self.lr_scheduler)
+
+    def init_q_state(self, key):
 
         key, key_1, key_2 = jax.random.split(key, 3)
 
@@ -43,7 +55,13 @@ class DDQN(Agent):
         init_x = jnp.zeros_like(obs)
         q_network_params = self.q_network.init(key_2, init_x)
 
-        return key, q_network_params
+        q_state = TrainState.create(
+            apply_fn=self.q_network.apply,
+            params=q_network_params,
+            tx=self.optimizer,
+        )
+
+        return key, q_state
 
     def init_replay_buffer(self, key, init_obs):
         key, subkey = jax.random.split(key, 2)
@@ -257,22 +275,16 @@ class DDQN(Agent):
     def init_runner(self, key):
 
         # Initialize the Q-network parameters
-        key, q_network_params = self.init_q_params(key)
+        key, q_state = self.init_q_state(key)
 
         # Initialize the target network parameters
-        target_q_network_params = jax.tree.map(lambda x: jnp.copy(x), q_network_params)
+        target_q_network_params = jax.tree.map(lambda x: jnp.copy(x), q_state.params)
 
         # Initialize environment
         key, init_obs, env_state = self.init_environment(key)
 
         # Initialize replay buffer
         key, buffer_state = self.init_replay_buffer(key, init_obs)
-
-        q_state = TrainState.create(
-            apply_fn=self.q_network.apply,
-            params=q_network_params,
-            tx=self.optimizer,
-        )
 
         runner = RunnerState(
             QState=q_state,

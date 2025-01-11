@@ -3,7 +3,6 @@ from typing import Any
 
 import chex
 import jax
-import optax
 import flax
 
 import jax.numpy as jnp
@@ -93,16 +92,6 @@ class Agent:
             add_batch_size=None,
         )
 
-        # initialize learning rate scheduler
-        self.lr_scheduler = optax.schedules.linear_schedule(
-            init_value=config["NETWORK_CONFIG"]["lr_initial"],
-            end_value=config["NETWORK_CONFIG"]["lr_final"],
-            transition_steps=self.to_num_timesteps(
-                config["NETWORK_CONFIG"]["lr_total_iters"]
-            ),
-        )
-        # initialize optimizer
-        self.optimizer = optax.adam(self.lr_scheduler)
 
     def init_environment(self, key):
         key, env_rng = jax.random.split(key, 2)
