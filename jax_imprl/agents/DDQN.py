@@ -1,31 +1,20 @@
-from typing import Any
-
-import chex
 import jax
 import jax.numpy as jnp
 from functools import partial
 
-import flax
 import orbax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from jax_imprl import MLP, Agent, TransitionTuple, EvalRunnerState
-
-# jax.config.update("jax_disable_jit", True)
+from jax_imprl import MLP, Agent, TransitionTuple, RunnerState, EvalRunnerState
 
 
-class RunnerState(TrainState):
-    key: chex.PRNGKey
-    env_state: Any
-    obs: chex.Array
-    buffer_state: Any
-    target_network_params: flax.core.FrozenDict
-    ep: int = 0
-    total_timesteps: int = 0
+class RunnerState(RunnerState):
+    QState: TrainState
 
-    def get_eps(self, exploration_scheduler):
-        return exploration_scheduler.get(self.total_timesteps)
+
+class EvalRunnerState(EvalRunnerState):
+    QState: TrainState
 
 
 class DDQN(Agent):
@@ -58,7 +47,7 @@ class DDQN(Agent):
 
     @partial(jax.jit, static_argnums=(0,))
     def get_greedy_action(self, runner):
-        q_values = runner.apply_fn(runner.params, runner.obs)
+        q_values = runner.QState.apply_fn(runner.QState.params, runner.obs)
         q_values = jax.lax.stop_gradient(q_values)
         greedy_action = jnp.argmax(q_values)
         return greedy_action
@@ -149,7 +138,7 @@ class DDQN(Agent):
 
         # compute loss
         td_loss, grads = jax.value_and_grad(self.compute_loss)(
-            runner.params,
+            runner.QState.params,
             runner.target_network_params,
             _obs,
             _action,
@@ -160,8 +149,8 @@ class DDQN(Agent):
         )
 
         # update
-        runner = runner.apply_gradients(grads=grads)
-        runner = runner.replace(key=key)
+        q_state = runner.QState.apply_gradients(grads=grads)
+        runner = runner.replace(key=key, QState=q_state)
 
         metrics = {"td_loss": td_loss}
 
@@ -171,7 +160,9 @@ class DDQN(Agent):
     def update_target_network(self, runner):
 
         # Hard update
-        target_network_params = jax.tree_map(lambda x: jnp.copy(x), runner.params)
+        target_network_params = jax.tree_map(
+            lambda x: jnp.copy(x), runner.QState.params
+        )
 
         return runner.replace(target_network_params=target_network_params)
 
@@ -268,10 +259,14 @@ class DDQN(Agent):
         )
         buffer_state = self.replay_buffer.init(_experience)
 
-        runner = RunnerState.create(
+        q_state = TrainState.create(
             apply_fn=self.q_network.apply,
             params=q_network_params,
             tx=self.optimizer,
+        )
+
+        runner = RunnerState(
+            QState=q_state,
             target_network_params=target_q_network_params,
             buffer_state=buffer_state,
             obs=init_obs,
@@ -289,10 +284,8 @@ class DDQN(Agent):
         init_obs, env_state = self.eval_env.reset(env_rng)
 
         # Initialize the runner
-        eval_runner = EvalRunnerState.create(
-            apply_fn=self.q_network.apply,
-            params=main_runner.params,
-            tx=self.optimizer,  # dummy optimizer
+        eval_runner = EvalRunnerState(
+            QState=main_runner.QState,
             env_state=env_state,
             obs=init_obs,
             key=key,
@@ -307,9 +300,7 @@ class DDQN(Agent):
             orbax_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
 
             # create checkpoint
-            ckpt = TrainState.create(
-                apply_fn=runner.apply_fn, params=runner.params, tx=runner.tx
-            )
+            ckpt = runner.QState
 
             path = f"{self.checkpoint_path}/chkpt_{runner.ep}"
 

@@ -4,10 +4,10 @@ from typing import Any
 import chex
 import jax
 import optax
+import flax
 
 import jax.numpy as jnp
 import flashbax as fbx
-from flax.training.train_state import TrainState
 
 from jax_imprl.agents.modules.schedulers import LinearScheduler
 
@@ -21,7 +21,22 @@ class TransitionTuple:
     truncated: chex.Array
 
 
-class EvalRunnerState(TrainState):
+@flax.struct.dataclass
+class RunnerState:
+    key: chex.PRNGKey
+    env_state: Any
+    obs: chex.Array
+    buffer_state: Any
+    target_network_params: flax.core.FrozenDict
+    ep: int = 0
+    total_timesteps: int = 0
+
+    def get_eps(self, exploration_scheduler):
+        return exploration_scheduler.get(self.total_timesteps)
+
+
+@flax.struct.dataclass
+class EvalRunnerState:
     key: chex.PRNGKey
     env_state: Any
     obs: chex.Array
