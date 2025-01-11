@@ -105,6 +105,22 @@ class Agent:
         # initialize optimizer
         self.optimizer = optax.adam(self.lr_scheduler)
 
+    def init_env_and_buffer(self, key):
+        key, env_rng, action_key = jax.random.split(key, 3)
+        init_obs, env_state = self.env.reset(env_rng)
+        dummy_action = self.env.action_space().sample(action_key)
+
+        # Initialize the buffer state
+        _experience = TransitionTuple(
+            obs=jnp.reshape(init_obs, (1, -1)),
+            action=dummy_action,
+            reward=jnp.array([0.0], dtype=jnp.float32),
+            terminated=jnp.reshape(False, (1, 1)),
+            truncated=jnp.reshape(False, (1, 1)),
+        )
+        buffer_state = self.replay_buffer.init(_experience)
+        return key, init_obs, env_state, buffer_state
+
     @partial(jax.jit, static_argnums=(0,))
     @partial(jax.vmap, in_axes=(None, 0))
     def train(self, key):
