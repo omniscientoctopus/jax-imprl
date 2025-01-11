@@ -45,6 +45,20 @@ class DDQN(Agent):
 
         return key, q_network_params
 
+    def init_replay_buffer(self, key, init_obs):
+        key, subkey = jax.random.split(key, 2)
+        dummy_action = self.env.action_space().sample(subkey)
+
+        _experience = TransitionTuple(
+            obs=jnp.reshape(init_obs, (1, -1)),
+            action=dummy_action,
+            reward=jnp.array([0.0], dtype=jnp.float32),
+            terminated=jnp.reshape(False, (1, 1)),
+            truncated=jnp.reshape(False, (1, 1)),
+        )
+        buffer_state = self.replay_buffer.init(_experience)
+        return key, buffer_state
+
     @partial(jax.jit, static_argnums=(0,))
     def get_random_action(self, key):
         return jax.random.randint(key, (1,), 0, self.env.action_space().n, jnp.int32)
@@ -248,8 +262,11 @@ class DDQN(Agent):
         # Initialize the target network parameters
         target_q_network_params = jax.tree.map(lambda x: jnp.copy(x), q_network_params)
 
-        # Initialize environment and buffer
-        key, init_obs, env_state, buffer_state = self.init_env_and_buffer(key)
+        # Initialize environment
+        key, init_obs, env_state = self.init_environment(key)
+
+        # Initialize replay buffer
+        key, buffer_state = self.init_replay_buffer(key, init_obs)
 
         q_state = TrainState.create(
             apply_fn=self.q_network.apply,
@@ -272,8 +289,7 @@ class DDQN(Agent):
     def init_eval_runner(self, main_runner):
 
         # Initialize the environment
-        key, env_rng = jax.random.split(main_runner.key, 2)
-        init_obs, env_state = self.eval_env.reset(env_rng)
+        key, init_obs, env_state = self.init_environment(main_runner.key)
 
         # Initialize the runner
         eval_runner = EvalRunnerState(
