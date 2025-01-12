@@ -15,6 +15,7 @@ jax=[{extras = ["cpu"], version = "^0.4.28", platform="darwin"},
     {extras = ["cuda"], version = "^0.4.28", platform="linux"}]
 chex="~0.1.84"
 gymnax="~0.0.1"
+distrax="~0.1.5"
 flashbax="~0.1.2"
 
 [tool.poetry.group.logging]
