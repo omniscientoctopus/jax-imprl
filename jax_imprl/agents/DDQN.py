@@ -1,22 +1,49 @@
 import jax
 import jax.numpy as jnp
 from functools import partial
+from typing import Any
 
+import chex
 import flax
 import orbax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from jax_imprl import MLP, Agent, TransitionTuple, RunnerState, EvalRunnerState
+from jax_imprl import MLP, Agent, TransitionTuple
+
+# jax.config.update("jax_disable_jit", True)
 
 
-class RunnerState(RunnerState):
+@flax.struct.dataclass
+class Runner:
+    # Q-learning
     QState: TrainState
     target_network_params: flax.core.FrozenDict
 
+    # defaults
+    key: chex.PRNGKey
+    env_state: Any
+    obs: chex.Array
+    buffer_state: Any
+    ep: int = 0
+    total_timesteps: int = 0
 
-class EvalRunnerState(EvalRunnerState):
+    def get_eps(self, exploration_scheduler):
+        return exploration_scheduler.get(self.total_timesteps)
+
+
+@flax.struct.dataclass
+class EvalRunner:
+    # Q-learning
     QState: TrainState
+
+    # defaults
+    key: chex.PRNGKey
+    env_state: Any
+    obs: chex.Array
+
+    def get_eps(self, exploration_scheduler):
+        return 0.0  # Always greedy
 
 
 class DDQN(Agent):
@@ -284,7 +311,7 @@ class DDQN(Agent):
         # Initialize replay buffer
         key, buffer_state = self.init_replay_buffer(key, init_obs)
 
-        runner = RunnerState(
+        runner = Runner(
             QState=q_state,
             target_network_params=target_q_network_params,
             buffer_state=buffer_state,
@@ -302,7 +329,7 @@ class DDQN(Agent):
         key, init_obs, env_state = self.init_environment(main_runner.key)
 
         # Initialize the runner
-        eval_runner = EvalRunnerState(
+        eval_runner = EvalRunner(
             QState=main_runner.QState,
             env_state=env_state,
             obs=init_obs,

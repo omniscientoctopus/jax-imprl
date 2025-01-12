@@ -1,9 +1,7 @@
 from functools import partial
-from typing import Any
 
 import chex
 import jax
-import flax
 import optax
 
 import jax.numpy as jnp
@@ -19,29 +17,6 @@ class TransitionTuple:
     reward: chex.Array
     terminated: chex.Array
     truncated: chex.Array
-
-
-@flax.struct.dataclass
-class RunnerState:
-    key: chex.PRNGKey
-    env_state: Any
-    obs: chex.Array
-    buffer_state: Any
-    ep: int = 0
-    total_timesteps: int = 0
-
-    def get_eps(self, exploration_scheduler):
-        return exploration_scheduler.get(self.total_timesteps)
-
-
-@flax.struct.dataclass
-class EvalRunnerState:
-    key: chex.PRNGKey
-    env_state: Any
-    obs: chex.Array
-
-    def get_eps(self, exploration_scheduler):
-        return 0.0  # Always greedy
 
 
 class Agent:
@@ -186,7 +161,7 @@ class Agent:
     def init_lr_scheduler(self, config):
 
         if config["lr_scheduler"] == "linear":
-            transition_steps = self.to_num_timesteps(config["total_iters"])
+            transition_steps = self.to_num_timesteps(config["lr_total_iters"])
 
             assert (
                 transition_steps <= self.train_timesteps
