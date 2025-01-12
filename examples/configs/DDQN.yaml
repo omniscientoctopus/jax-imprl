@@ -9,7 +9,7 @@ k_out_of_n_infinite:
     NETWORK_CONFIG:
         hidden_layers: [64, 64]
         optimizer: Adam
-        lr_scheduler: LinearLR
+        lr_scheduler: linear
         lr_initial: 0.001
         lr_final: 0.0001
         lr_total_iters: 10_000

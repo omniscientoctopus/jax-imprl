@@ -4,7 +4,6 @@ from functools import partial
 
 import flax
 import orbax
-import optax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
@@ -30,22 +29,21 @@ class DDQN(Agent):
 
         super().__init__(env, config, experiment_config, eval_env, checkpoint_path)
 
-        # initialize Q network
+        # Initialize Q network
         _input = self.env.obs_dim
         _hidden = config["NETWORK_CONFIG"]["hidden_layers"]
         _output = self.env.action_space().n
         self.q_network = MLP([_input] + _hidden + [_output])
 
-        # initialize learning rate scheduler
-        self.lr_scheduler = optax.schedules.linear_schedule(
-            init_value=config["NETWORK_CONFIG"]["lr_initial"],
-            end_value=config["NETWORK_CONFIG"]["lr_final"],
-            transition_steps=self.to_num_timesteps(
-                config["NETWORK_CONFIG"]["lr_total_iters"]
-            ),
+        # Initialize learning rate scheduler
+        self.lr_scheduler = self.init_lr_scheduler(
+            config["NETWORK_CONFIG"]
         )
-        # initialize optimizer
-        self.optimizer = optax.adam(self.lr_scheduler)
+
+        # Initialize optimizer
+        self.optimizer = self.init_optimizer(
+            config["NETWORK_CONFIG"], self.lr_scheduler
+        )
 
     def init_q_state(self, key):
 

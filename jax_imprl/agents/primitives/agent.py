@@ -4,6 +4,7 @@ from typing import Any
 import chex
 import jax
 import flax
+import optax
 
 import jax.numpy as jnp
 import flashbax as fbx
@@ -92,12 +93,6 @@ class Agent:
             add_batch_size=None,
         )
 
-
-    def init_environment(self, key):
-        key, env_rng = jax.random.split(key, 2)
-        init_obs, env_state = self.eval_env.reset(env_rng)
-        return key,init_obs,env_state
-
     @partial(jax.jit, static_argnums=(0,))
     @partial(jax.vmap, in_axes=(None, 0))
     def train(self, key):
@@ -115,28 +110,8 @@ class Agent:
 
         return runner, metrics
 
-    def summarize_metrics(self, metrics):
-        # compute aggregate metrics over episodes
-        dones = metrics["dones"]
-
-        summary = {}
-        for key, value in metrics.items():
-            metric = value * dones
-            summary[key] = metric.reshape(self.num_episodes, -1).sum(axis=1)
-
-        return summary
-
     def compute_loss(self, *args):
         return jnp.mean(self.compute_per_sample_loss(*args), axis=0).squeeze()
-
-    def is_time_to_evaluate(self, ep, done):
-
-        cond_1 = lambda ep: (ep % self.eval_freq) == 0
-        cond_2 = lambda ep: ep == (self.num_episodes - 1)
-
-        c1 = jnp.logical_or(cond_1(ep), cond_2(ep))
-
-        return jax.lax.select(c1, done, False)
 
     @partial(jax.jit, static_argnums=(0,))
     def evaluate_and_checkpoint(self, main_runner, metrics):
@@ -187,3 +162,56 @@ class Agent:
         eval_runner = eval_runner.replace(key=key, env_state=env_state, obs=next_obs)
 
         return eval_runner, metrics
+
+    def summarize_metrics(self, metrics):
+        # compute aggregate metrics over episodes
+        dones = metrics["dones"]
+
+        summary = {}
+        for key, value in metrics.items():
+            metric = value * dones
+            summary[key] = metric.reshape(self.num_episodes, -1).sum(axis=1)
+
+        return summary
+
+    def is_time_to_evaluate(self, ep, done):
+
+        cond_1 = lambda ep: (ep % self.eval_freq) == 0
+        cond_2 = lambda ep: ep == (self.num_episodes - 1)
+
+        c1 = jnp.logical_or(cond_1(ep), cond_2(ep))
+
+        return jax.lax.select(c1, done, False)
+
+    def init_lr_scheduler(self, config):
+
+        if config["lr_scheduler"] == "linear":
+            transition_steps = self.to_num_timesteps(config["total_iters"])
+
+            assert (
+                transition_steps <= self.train_timesteps
+            ), "Transition steps must be less than total timesteps"
+            lr_scheduler = optax.schedules.linear_schedule(
+                init_value=config["lr_initial"],
+                end_value=config["lr_final"],
+                transition_steps=transition_steps,
+            )
+        else:
+            raise NotImplementedError
+
+        return lr_scheduler
+
+    @staticmethod
+    def init_optimizer(config, lr_scheduler):
+
+        if config["optimizer"] == "Adam":
+            optimizer = optax.adam(lr_scheduler)
+        else:
+            raise NotImplementedError
+
+        return optimizer
+
+    def init_environment(self, key):
+        key, env_rng = jax.random.split(key, 2)
+        init_obs, env_state = self.eval_env.reset(env_rng)
+        return key, init_obs, env_state
