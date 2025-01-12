@@ -63,9 +63,7 @@ class DDQN(Agent):
         self.q_network = MLP([_input] + _hidden + [_output])
 
         # Initialize learning rate scheduler
-        self.lr_scheduler = self.init_lr_scheduler(
-            config["NETWORK_CONFIG"]
-        )
+        self.lr_scheduler = self.init_lr_scheduler(config["NETWORK_CONFIG"])
 
         # Initialize optimizer
         self.optimizer = self.init_optimizer(

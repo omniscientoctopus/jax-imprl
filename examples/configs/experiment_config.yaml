@@ -5,13 +5,13 @@ ENV_KWARGS:
   reward_shaping: True
 
 # wandb settings
-WANDB: True
+WANDB: False
 WANDB_ENTITY: "shaktimaan"
 WANDB_PROJECT: "jax_imprl"
 
 # Logging settings
 SEED: 42 # seed to generate random key
-NUM_RUNS: 10 # num independent runs, it splits the random key into multiple keys
+NUM_RUNS: 1 # num independent runs, it splits the random key into multiple keys
 NUM_EPISODES: 50_000 # number of training episodes
 LOGGING_FREQ: 100 # episodes
 EVAL_FREQ: 5_000 # episodes
