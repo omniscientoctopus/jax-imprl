@@ -2,15 +2,13 @@ import time
 
 import jax
 import jax.numpy as jnp
-import jax_imprl.structural_envs
+import jax_imprl.envs
 
 
 # Environment
 ENV_NAME = "k_out_of_n_infinite"
 ENV_SETTING = "4-of-4_infinite"
-env = jax_imprl.structural_envs.make(
-    ENV_NAME, ENV_SETTING, single_agent=False, eval_env=True
-)
+env = jax_imprl.envs.make(ENV_NAME, ENV_SETTING, single_agent=False, eval_env=True)
 
 action = jnp.array([0, 0, 0, 0])
 

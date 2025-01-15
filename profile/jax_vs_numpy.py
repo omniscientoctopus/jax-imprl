@@ -7,7 +7,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-import jax_imprl.structural_envs
+import jax_imprl.envs
 from numpy_k_out_of_n import KOutOfN as numpy_k_out_of_n
 
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         numpy_mp_timings.append(end - start)
 
     ########################## JAX (for loop) ##########################
-    jax_env = jax_imprl.structural_envs.make(
+    jax_env = jax_imprl.envs.make(
         ENV_NAME,
         ENV_SETTING,
         single_agent=False,
@@ -195,7 +195,6 @@ if __name__ == "__main__":
         runner = Runner(key=key, env_state=env_state, obs=next_obs)
 
         return runner, metrics
-
 
     def scanned_rollout(key, episodes):
 

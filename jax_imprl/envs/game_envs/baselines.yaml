@@ -1,0 +1,13 @@
+matrix_game:
+  climb_game:
+    best: 275
+  1-of-2_game:
+    best: 200
+  1-of-3_game:
+    best: 200
+  2-of-3_game:
+    best: 400
+  3-of-3_game:
+    best: 600
+  1-of-5_game:
+    best: 200

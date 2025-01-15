@@ -1,14 +1,15 @@
 """
-Heavily based on the tests from the original implementation by the author: https://github.com/omniscientoctopus/imprl/blob/main/tests/test_env.py
+Based on the tests from the original implementation by the author: https://github.com/omniscientoctopus/imprl/blob/main/tests/test_env.py
 
 """
 
+import os
+import yaml
 import pytest
 import numpy as np
 import jax
 import jax.numpy as jnp
-
-import jax_imprl.structural_envs
+import jax_imprl.envs
 from jax_imprl.runner import scanned_rollout
 
 
@@ -16,7 +17,7 @@ from jax_imprl.runner import scanned_rollout
 def kn_env():
     ENV_NAME = "k_out_of_n"
     ENV_SETTING = "5-of-5"
-    return jax_imprl.structural_envs.make(ENV_NAME, ENV_SETTING, single_agent=False)
+    return jax_imprl.envs.make(ENV_NAME, ENV_SETTING, single_agent=False)
 
 
 @pytest.fixture
@@ -25,7 +26,7 @@ def kn_eval_envs():
     envs_list = []
     for k in range(1, 6):
         env_setting = f"{k}-of-5"
-        env = jax_imprl.structural_envs.make(ENV_NAME, env_setting, single_agent=False)
+        env = jax_imprl.envs.make(ENV_NAME, env_setting, single_agent=False)
         envs_list.append(env)
     return envs_list
 
@@ -36,7 +37,7 @@ def kn_infinite_eval_envs():
     envs_list = []
     for k in range(1, 5):
         env_setting = f"{k}-of-4_infinite"
-        env = jax_imprl.structural_envs.make(
+        env = jax_imprl.envs.make(
             ENV_NAME,
             env_setting,
             single_agent=False,
@@ -44,6 +45,57 @@ def kn_infinite_eval_envs():
         )
         envs_list.append(env)
     return envs_list
+
+
+@pytest.fixture
+def climb_game():
+    ENV_NAME = "matrix_game"
+    ENV_SETTING = "climb_game"
+    return jax_imprl.envs.make(ENV_NAME, ENV_SETTING, single_agent=False)
+
+
+@pytest.fixture
+def single_agent_climb_game():
+    ENV_NAME = "matrix_game"
+    ENV_SETTING = "climb_game"
+    return jax_imprl.envs.make(ENV_NAME, ENV_SETTING, single_agent=True)
+
+
+@pytest.fixture
+def kn_games():
+    ENV_NAME = "matrix_game"
+    envs_list = []
+    for k in range(1, 4):
+        env_setting = f"{k}-of-3_game"
+        env = jax_imprl.envs.make(ENV_NAME, env_setting, single_agent=False)
+        envs_list.append(env)
+    return envs_list
+
+
+@pytest.fixture
+def ddqn_matrix_game_config():
+    agent_config = {
+        "MAX_MEMORY_SIZE": 10_000,
+        "BATCH_SIZE": 64,
+        "TARGET_UPDATE_FREQ": 100,
+        "DISCOUNT_FACTOR": 0,
+        "NETWORK_CONFIG": {
+            "hidden_layers": [64, 64],
+            "optimizer": "Adam",
+            "lr_scheduler": "LinearLR",
+            "lr_initial": 0.001,
+            "lr_final": 0.0001,
+            "lr_total_iters": 10_000,
+        },
+        "EXPLORATION_STRATEGY": {
+            "name": "epsilon_greedy",
+            "initial_value": 1,
+            "final_value": 0.005,
+            "total_iters": 10_000,  # number of episodes to linearly decay epsilon
+        },
+    }
+
+    return agent_config
 
 
 def test_init(kn_env):
@@ -157,8 +209,16 @@ def test_reward(kn_env):
 @pytest.mark.parametrize(
     "env_fixture, actions, expected_means",
     [
-        ("kn_eval_envs", [0, 0, 0, 0, 0], [22548.04, 44109.34, 58108.71, 68800.52, 78659.08]),
-        ("kn_eval_envs", [0, 1, 2, 0, 1], [18367.21, 18465.27, 56511.25, 77684.45, 92728.47]),
+        (
+            "kn_eval_envs",
+            [0, 0, 0, 0, 0],
+            [22548.04, 44109.34, 58108.71, 68800.52, 78659.08],
+        ),
+        (
+            "kn_eval_envs",
+            [0, 1, 2, 0, 1],
+            [18367.21, 18465.27, 56511.25, 77684.45, 92728.47],
+        ),
         ("kn_infinite_eval_envs", [0, 0, 0, 0], [223.23, 639.62, 1228.91, 2036.35]),
         ("kn_infinite_eval_envs", [0, 1, 2, 0], [209.85, 492.72, 1071.76, 1996.08]),
     ],
@@ -175,3 +235,72 @@ def test_kn_env_returns(request, env_fixture, actions, expected_means):
 
         # check if the mean returns are close to the expected values
         assert np.isclose(mean, expected_means[k], rtol=1e-2)
+
+
+@pytest.mark.parametrize(
+    "env_fixture, actions, expected_means",
+    [
+        # ("climb_game", [0, 0], [275.0]),
+        ("kn_games", [2, 2, 0], [400, 400, 5400]),
+    ],
+)
+def test_kn_game_returns(request, env_fixture, actions, expected_means):
+
+    NUM_EPISODES = 10
+    envs = request.getfixturevalue(env_fixture)
+
+    for i, env in enumerate(envs):
+        key = jax.random.PRNGKey(42)
+        evals = scanned_rollout(key, env, actions, NUM_EPISODES)
+        mean = -np.mean(evals)
+
+        # check if the mean returns are close to the expected values
+        assert np.isclose(mean, expected_means[i], rtol=1e-2)
+
+
+def test_climb_game_returns(climb_game):
+
+    NUM_EPISODES = 10
+    actions = [0, 0]
+    key = jax.random.PRNGKey(42)
+    evals = scanned_rollout(key, climb_game, actions, NUM_EPISODES)
+    mean = np.mean(evals)
+
+    # check if the mean returns are close to the expected values
+    assert np.isclose(mean, 275.0, rtol=1e-2)
+
+
+def test_ddqn_on_climb_game(single_agent_climb_game, ddqn_matrix_game_config):
+
+    # Experiment config
+    exp_config = {
+        "SEED": 42,
+        "NUM_RUNS": 1,
+        "NUM_EPISODES": 10_000,
+        "LOGGING_FREQ": 1_000,
+        "EVAL_FREQ": 5_000,
+        "EVAL_EPISODES": 100,
+    }
+
+    from jax_imprl.agents.DDQN import DDQN
+
+    # Agent
+    agent = DDQN(single_agent_climb_game, ddqn_matrix_game_config, exp_config)
+
+    # Seeds
+    seed = exp_config["SEED"]
+    num_runs = exp_config["NUM_RUNS"]
+    key = jax.random.PRNGKey(seed)
+    subkeys = jax.random.split(key, num_runs)
+
+    # Training
+    runner, metrics = jax.block_until_ready(agent.train(subkeys))
+
+    eval_episodes = list(range(0, exp_config["NUM_EPISODES"], exp_config["EVAL_FREQ"])) + [
+        exp_config["NUM_EPISODES"] - 1
+    ]
+
+    eval_means = metrics["eval_mean"][:, eval_episodes]
+
+    # all vals should be 275.0
+    assert jnp.allclose(-eval_means, 275.0, rtol=1e-2)
