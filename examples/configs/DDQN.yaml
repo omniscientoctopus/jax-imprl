@@ -20,6 +20,26 @@ k_out_of_n_infinite:
         final_value: 0.005
         total_iters: 10_000 # number of episodes to linearly decay epsilon
 
+matrix_game:
+    MAX_MEMORY_SIZE: 10_000 # transitions
+    BATCH_SIZE: 64 # transitions
+    TARGET_UPDATE_FREQ: 100 # episodes
+    DISCOUNT_FACTOR: 0 # one-step game
+
+    NETWORK_CONFIG:
+        hidden_layers: [64, 64]
+        optimizer: Adam
+        lr_scheduler: LinearLR
+        lr_initial: 0.001
+        lr_final: 0.0001
+        lr_total_iters: 10_000
+
+    EXPLORATION_STRATEGY:
+        name: epsilon_greedy
+        initial_value: 1
+        final_value: 0.005
+        total_iters: 10_000 # number of episodes to linearly decay epsilon
+
 k_out_of_n:
     MAX_MEMORY_SIZE: 100_000 # transitions
     BATCH_SIZE: 64 # transitions
