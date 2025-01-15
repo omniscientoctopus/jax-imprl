@@ -22,7 +22,7 @@ import wandb
 import numpy as np
 import matplotlib.pyplot as plt
 
-import jax_imprl.structural_envs
+import jax_imprl.envs
 from jax_imprl.agents.DDQN import DDQN
 
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -63,10 +63,10 @@ def get_agent_configs():
 
 
 def get_envs(env_name, env_setting, env_kwargs):
-    env = jax_imprl.structural_envs.make(
+    env = jax_imprl.envs.make(
         env_name, env_setting, single_agent=True, **env_kwargs
     )
-    eval_env = jax_imprl.structural_envs.make(
+    eval_env = jax_imprl.envs.make(
         env_name, env_setting, single_agent=True, eval_env=True
     )
 

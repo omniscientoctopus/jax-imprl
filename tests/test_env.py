@@ -8,7 +8,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-import jax_imprl.structural_envs
+import jax_imprl.envs
 from jax_imprl.runner import scanned_rollout
 
 
@@ -16,7 +16,7 @@ from jax_imprl.runner import scanned_rollout
 def kn_env():
     ENV_NAME = "k_out_of_n"
     ENV_SETTING = "5-of-5"
-    return jax_imprl.structural_envs.make(ENV_NAME, ENV_SETTING, single_agent=False)
+    return jax_imprl.envs.make(ENV_NAME, ENV_SETTING, single_agent=False)
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def kn_eval_envs():
     envs_list = []
     for k in range(1, 6):
         env_setting = f"{k}-of-5"
-        env = jax_imprl.structural_envs.make(ENV_NAME, env_setting, single_agent=False)
+        env = jax_imprl.envs.make(ENV_NAME, env_setting, single_agent=False)
         envs_list.append(env)
     return envs_list
 
@@ -36,7 +36,7 @@ def kn_infinite_eval_envs():
     envs_list = []
     for k in range(1, 5):
         env_setting = f"{k}-of-4_infinite"
-        env = jax_imprl.structural_envs.make(
+        env = jax_imprl.envs.make(
             ENV_NAME,
             env_setting,
             single_agent=False,
