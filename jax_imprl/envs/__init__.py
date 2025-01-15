@@ -27,9 +27,10 @@ def make(name, setting=None, single_agent=True, **kwargs):
     elif name == "matrix_game":
 
         import jax_imprl.envs.game_envs.jax_matrix_game
+        from jax_imprl.envs.game_envs.single_agent_wrapper import SingleAgentWrapper
 
         # get class MatrixGame
-        module = getattr(jax_imprl.envs.game_envs, name)
+        module = getattr(jax_imprl.envs.game_envs, f"jax_{name}")
         env_class = getattr(module, "MatrixGame")
 
         rel_path_config = f"game_envs/env_configs/{setting}.yaml"
