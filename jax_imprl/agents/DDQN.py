@@ -180,13 +180,16 @@ class DDQN(Agent):
 
         return (q_value - target) ** 2
 
+    def compute_loss(self, *args):
+        return jnp.mean(self.compute_per_sample_loss(*args), axis=0).squeeze()
+
     @partial(jax.jit, static_argnums=(0,))
     def learning_phase(self, runner, unused):
 
         # sample batch from replay buffer
         key, subkey = jax.random.split(runner.key)
         batch = self.replay_buffer.sample(runner.buffer_state, subkey).experience
-        _obs, _action, _reward, _terminated, _truncated, _next_obs = (
+        args = (
             batch.first.obs.squeeze(),
             batch.first.action,
             batch.first.reward,
@@ -197,14 +200,7 @@ class DDQN(Agent):
 
         # compute loss
         td_loss, grads = jax.value_and_grad(self.compute_loss)(
-            runner.QState.params,
-            runner.target_network_params,
-            _obs,
-            _action,
-            _reward,
-            _terminated,
-            _truncated,
-            _next_obs,
+            runner.QState.params, runner.target_network_params, *args
         )
 
         # update
