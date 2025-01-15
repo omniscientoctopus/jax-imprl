@@ -164,19 +164,16 @@ class DDQN(Agent):
         all_q_values = self.q_network.apply(q_network_params, obs)
         q_value = all_q_values[action]
 
-        # compute next Q-values
-        all_q_next_values = self.q_network.apply(
-            jax.lax.stop_gradient(q_network_params), next_obs
-        )
+        # compute future value (using target network)
+        all_q_next_values = self.q_network.apply(q_network_params, next_obs)
         best_action = jnp.argmax(all_q_next_values)
-        all_q_target_next_values = self.q_network.apply(
-            jax.lax.stop_gradient(target_network_params), next_obs
-        )
-        q_next_value = all_q_target_next_values[best_action]
+        all_q_target_next_values = self.q_network.apply(target_network_params, next_obs)
+        future_value = all_q_target_next_values[best_action]
 
         # compute target
         _mask = jnp.where(terminated, 1, 0)
-        target = reward + (1 - _mask) * self.discount_factor * q_next_value
+        target = reward + (1 - _mask) * self.discount_factor * future_value
+        target = jax.lax.stop_gradient(target)
 
         return (q_value - target) ** 2
 
