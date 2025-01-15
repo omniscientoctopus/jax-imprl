@@ -90,7 +90,7 @@ def plot_results(experiment_config, logger):
     plt.title(f"{env_setting}")
     plt.grid()
     plt.savefig(f"{experiment_name}-{env_setting}.png")
-    return num_episodes
+    plt.show()
 
 
 def log_to_wandb(experiment_config, agent_config, logger):
