@@ -4,6 +4,7 @@ k_out_of_n_infinite:
     MAX_MEMORY_SIZE: 10_000 # transitions
     BATCH_SIZE: 64 # transitions
     DISCOUNT_FACTOR: 0.8
+    IMPORTANCE_SAMPLING_WEIGHT_CLIP: 2.0
 
     ACTOR_CONFIG:
         hidden_layers: [64, 64]
@@ -24,13 +25,40 @@ k_out_of_n_infinite:
     EXPLORATION_STRATEGY:
         name: epsilon_greedy
         initial_value: 1
-        final_value: 0.005
-        total_iters: 1_000 # number of episodes to linearly decay epsilon
+        final_value: 0.01
+        total_iters: 10_000 # number of episodes to linearly decay epsilon
 
 matrix_game:
     MAX_MEMORY_SIZE: 10_000 # transitions
     BATCH_SIZE: 64 # transitions
     DISCOUNT_FACTOR: 0 # one-step game
+
+    ACTOR_CONFIG:
+        hidden_layers: [64, 64]
+        optimizer: adam
+        lr_scheduler: linear
+        lr_initial: 0.001
+        lr_final: 0.0001
+        lr_total_iters: 10
+
+    CRITIC_CONFIG:
+        hidden_layers: [64, 64]
+        optimizer: adam
+        lr_scheduler: linear
+        lr_initial: 0.005
+        lr_final: 0.0005
+        lr_total_iters: 10
+
+    EXPLORATION_STRATEGY:
+        name: epsilon_greedy
+        initial_value: 1
+        final_value: 0.005
+        total_iters: 10 # number of episodes to linearly decay epsilon
+
+k_out_of_n:
+    MAX_MEMORY_SIZE: 10_000 # transitions
+    BATCH_SIZE: 64 # transitions
+    DISCOUNT_FACTOR: 0.99
 
     ACTOR_CONFIG:
         hidden_layers: [64, 64]
