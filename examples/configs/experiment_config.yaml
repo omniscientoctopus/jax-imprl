@@ -1,8 +1,8 @@
 # Environment settings
-ENV_NAME: "matrix_game"
-ENV_SETTING: "1-of-3_game"
+ENV_NAME: "k_out_of_n_infinite"
+ENV_SETTING: "1-of-4_infinite"
 ENV_KWARGS: 
-  eval_env: False
+  reward_shaping: True
 
 # wandb settings
 WANDB: False
