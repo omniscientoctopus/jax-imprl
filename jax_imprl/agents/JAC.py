@@ -100,6 +100,8 @@ class JointActorCritic(Agent):
             config["CRITIC_CONFIG"], self.critic_lr_scheduler
         )
 
+        self.IS_weight_clip = self.config["IMPORTANCE_SAMPLING_WEIGHT_CLIP"]
+
     def init_actor_and_critic_state(self, key):
 
         key, key_1, key_2, key_3 = jax.random.split(key, 4)
@@ -126,8 +128,8 @@ class JointActorCritic(Agent):
         _experience = TransitionTuple(
             obs=jnp.reshape(init_obs, (1, -1)),
             action=dummy_action,
-            action_log_prob=jnp.array([1.0], dtype=jnp.float32),
-            reward=jnp.array([0.0], dtype=jnp.float32),
+            action_log_prob=jnp.array([1.0]),
+            reward=jnp.array([0.0]),
             terminated=jnp.reshape(False, (1, 1)),
             truncated=jnp.reshape(False, (1, 1)),
         )
@@ -137,7 +139,7 @@ class JointActorCritic(Agent):
     @partial(jax.jit, static_argnums=(0,))
     def get_random_action(self, runner):
         num_actions = self.env.action_space().n
-        logits = jnp.ones((num_actions,), dtype=jnp.float32) / 2
+        logits = jnp.ones(num_actions) / num_actions
         return distrax.Categorical(logits=logits)
 
     @partial(jax.jit, static_argnums=(0,))
@@ -178,7 +180,7 @@ class JointActorCritic(Agent):
         experience = TransitionTuple(
             obs=jnp.reshape(obs, (1, -1)),
             action=action,
-            action_log_prob=jnp.reshape(action_log_prob, (1, 1)),
+            action_log_prob=action_log_prob,
             reward=jnp.array([reward]),
             terminated=jnp.reshape(terminated, (1, 1)),
             truncated=jnp.reshape(truncated, (1, 1)),
@@ -187,8 +189,7 @@ class JointActorCritic(Agent):
 
         return runner.replace(buffer_state=buffer_state)
 
-    @partial(jax.vmap, in_axes=(None, None, None, 0, 0, 0, 0, 0, 0, 0))
-    def compute_per_sample_loss(
+    def compute_loss(
         self,
         actor_params,
         critic_params,
@@ -201,37 +202,40 @@ class JointActorCritic(Agent):
         next_obs,
     ):
 
-        current_value = self.critic.apply(critic_params, obs)
-        future_value = self.critic.apply(critic_params, next_obs)
+        current_values = self.critic.apply(critic_params, obs)
+        future_values = self.critic.apply(critic_params, next_obs)
 
         # compute target
         _mask = jnp.where(terminated, 1, 0)
-        target = reward + (1 - _mask) * self.discount_factor * future_value
+        target = reward + (1 - _mask) * self.discount_factor * future_values
+        target = jax.lax.stop_gradient(target)
 
         # compute advantage
-        advantage = target - current_value
+        advantage = target - current_values
         advantage = jax.lax.stop_gradient(advantage)
+        # standardize advantage
+        advantage = (advantage - jnp.mean(advantage)) / (jnp.std(advantage) + 1e-8)
 
         # importance sampling weight
         logits = self.actor.apply(actor_params, obs)
-
         action_dist = distrax.Categorical(logits=logits)
-        true_log_prob = action_dist.log_prob(action)
+        true_log_prob = action_dist.log_prob(action).reshape(-1, 1)
         weight = jnp.exp(true_log_prob - action_log_prob)
         # clip weights to reduce variance
-        # weight = jnp.minimum(self.importance_sampling_weight_min, weight)
-        weight = jnp.minimum(weight, 5.0)
+        weight = jnp.minimum(weight, self.IS_weight_clip)
         weight = jax.lax.stop_gradient(weight)
 
-        # jax.debug.print("{x}, {y}", x=weight, y=true_log_prob)
-
         actor_loss = -true_log_prob * advantage * weight
-        critic_loss = weight * (current_value - target) ** 2
+        critic_loss = (current_values - target) ** 2
 
-        return actor_loss + critic_loss
+        m_actor_loss = jnp.mean(actor_loss)
+        m_critic_loss = jnp.mean(critic_loss)
 
-    def compute_loss(self, *args):
-        return jnp.mean(self.compute_per_sample_loss(*args), axis=0).squeeze()
+        m_loss = m_actor_loss + m_critic_loss
+
+        # jax.debug.breakpoint()
+
+        return m_loss, (m_actor_loss, m_critic_loss)
 
     # Compute the L2 norm of gradients
     @staticmethod
@@ -259,11 +263,14 @@ class JointActorCritic(Agent):
             batch.second.obs.squeeze(),
         )
 
-        loss, grads = jax.value_and_grad(
-            self.compute_loss, argnums=(0, 1)
-        )(runner.ActorState.params, runner.CriticState.params, *args)
+        # get actor (argnum=0) and critic (argnum=1) grads
+        val_and_grad_fn = jax.value_and_grad(
+            self.compute_loss, argnums=(0, 1), has_aux=True
+        )
 
-        actor_grads, critic_grads = grads
+        ((_, (actor_loss, critic_loss)), (actor_grads, critic_grads)) = val_and_grad_fn(
+            runner.ActorState.params, runner.CriticState.params, *args
+        )
 
         actor_state = runner.ActorState.apply_gradients(grads=actor_grads)
         critic_state = runner.CriticState.apply_gradients(grads=critic_grads)
@@ -276,8 +283,8 @@ class JointActorCritic(Agent):
         )
 
         metrics = {
-            "actor_loss": loss,
-            "critic_loss": loss,
+            "actor_loss": actor_loss,
+            "critic_loss": critic_loss,
             "actor_grad_norm": actor_grad_norm,
             "critic_grad_norm": critic_grad_norm,
         }
