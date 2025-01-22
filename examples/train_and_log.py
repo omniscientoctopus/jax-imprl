@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 
 import jax_imprl.envs
 from jax_imprl.agents.DDQN import DDQN
+from jax_imprl.agents.JAC import JointActorCritic as JAC
 
 os.environ["WANDB__SERVICE_WAIT"] = "300"
 
@@ -54,9 +55,9 @@ def create_experiment(checkpoint=True):
     return experiment_name, None
 
 
-def get_agent_configs():
+def get_agent_configs(alg):
     script_path = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(script_path, "configs", "DDQN.yaml")
+    config_path = os.path.join(script_path, "configs", f"{alg}.yaml")
     with open(config_path, "r") as f:
         configs = yaml.safe_load(f)
     return configs
@@ -146,10 +147,12 @@ if __name__ == "__main__":
     env, eval_env = get_envs(env_name, env_setting, env_kwargs)
 
     # Agent
+    # alg = "DDQN"
+    alg = "JAC"
     experiment_name, checkpoint_path = create_experiment(checkpoint=False)
     experiment_config["EXPERIMENT_NAME"] = experiment_name
-    agent_config = get_agent_configs()[env_name]
-    agent = DDQN(
+    agent_config = get_agent_configs(alg)[env_name]
+    agent = JAC(
         env,
         agent_config,
         experiment_config,
