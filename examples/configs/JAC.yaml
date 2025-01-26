@@ -10,8 +10,8 @@ k_out_of_n_infinite:
         hidden_layers: [64, 64]
         optimizer: adam
         lr_scheduler: linear
-        lr_initial: 0.001
-        lr_final: 0.0001
+        lr_initial: 0.0001
+        lr_final: 0.00001
         lr_total_iters: 10_000
 
     CRITIC_CONFIG:
@@ -25,7 +25,7 @@ k_out_of_n_infinite:
     EXPLORATION_STRATEGY:
         name: epsilon_greedy
         initial_value: 1
-        final_value: 0.01
+        final_value: 0.005
         total_iters: 10_000 # number of episodes to linearly decay epsilon
 
 matrix_game:
