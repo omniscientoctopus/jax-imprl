@@ -32,6 +32,7 @@ matrix_game:
     MAX_MEMORY_SIZE: 10_000 # transitions
     BATCH_SIZE: 64 # transitions
     DISCOUNT_FACTOR: 0 # one-step game
+    IMPORTANCE_SAMPLING_WEIGHT_CLIP: 2.0
 
     ACTOR_CONFIG:
         hidden_layers: [64, 64]
@@ -59,6 +60,7 @@ k_out_of_n:
     MAX_MEMORY_SIZE: 10_000 # transitions
     BATCH_SIZE: 64 # transitions
     DISCOUNT_FACTOR: 0.99
+    IMPORTANCE_SAMPLING_WEIGHT_CLIP: 2.0
 
     ACTOR_CONFIG:
         hidden_layers: [64, 64]

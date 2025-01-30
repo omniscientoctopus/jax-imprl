@@ -102,6 +102,7 @@ def jac_matrix_game_config():
         "MAX_MEMORY_SIZE": 10_000,
         "BATCH_SIZE": 64,
         "DISCOUNT_FACTOR": 0,
+        "IMPORTANCE_SAMPLING_WEIGHT_CLIP": 2.0,
         "ACTOR_CONFIG": {
             "hidden_layers": [64, 64],
             "optimizer": "adam",
