@@ -148,8 +148,8 @@ class JointActorCritic(Agent):
         logits = jax.lax.stop_gradient(logits)
         return distrax.Categorical(logits=logits)
 
-    @partial(jax.jit, static_argnums=(0))
-    def select_action(self, runner):
+    @partial(jax.jit, static_argnums=(0, 2))
+    def select_action(self, runner, get_probs=False):
         ## if training: epsilon-greedy strategy
         #  else: greedy strategy
         eps = runner.get_eps(self.exploration_scheduler)
@@ -171,7 +171,10 @@ class JointActorCritic(Agent):
 
         runner = runner.replace(key=key)
 
-        return runner, action, action_log_prob
+        if get_probs:
+            return runner, action, action_log_prob
+        else:
+            return runner, action
 
     @partial(jax.jit, static_argnums=(0,))
     def update_replay_buffer(
@@ -295,7 +298,7 @@ class JointActorCritic(Agent):
     def update_runner(self, runner, unused):
 
         # 1. select action
-        runner, action, action_log_prob = self.select_action(runner)
+        runner, action, action_log_prob = self.select_action(runner, get_probs=True)
 
         # 2. environment
         key, step_key = jax.random.split(runner.key)

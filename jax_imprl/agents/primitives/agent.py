@@ -119,7 +119,7 @@ class Agent:
     def update_eval_runner(self, eval_runner, unused):
 
         # 1. Select action
-        eval_runner, action, action_prob = self.select_action(eval_runner)
+        eval_runner, action = self.select_action(eval_runner)
 
         # 2. Environment step
         key, step_key = jax.random.split(eval_runner.key)
