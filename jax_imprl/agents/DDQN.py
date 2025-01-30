@@ -212,7 +212,7 @@ class DDQN(Agent):
     def update_target_network(self, runner):
 
         # Hard update
-        target_network_params = jax.tree_map(
+        target_network_params = jax.tree.map(
             lambda x: jnp.copy(x), runner.QState.params
         )
 
