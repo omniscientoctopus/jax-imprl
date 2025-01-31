@@ -40,6 +40,7 @@ def kn_infinite_eval_envs():
             env_setting,
             single_agent=False,
             eval_env=True,
+            reward_shaping=False,
         )
         envs_list.append(env)
     return envs_list
