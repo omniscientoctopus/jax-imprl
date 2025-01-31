@@ -53,6 +53,7 @@ class JaxKOutOfN:
 
         self.wrapper = wrapper
         self.reward_shaping = reward_shaping
+        self.global_obs = False  # global observation
 
         # time limits for training and evaluation
         train_time_horizon = 50  # training time limit per episode
@@ -420,19 +421,15 @@ class JaxKOutOfN:
     def get_obs(self, state: EnvState) -> chex.Array:
 
         if self.wrapper == "OneHot":
-            _one_hot = jnp.zeros(
-                (self.n_components, self.n_damage_states), dtype=jnp.uint8
-            )
-            _one_hot = _one_hot.at[self.component_list, state.damage_state].set(1)
-            obs = _one_hot
+            local_obs = jax.nn.one_hot(state.damage_state, self.n_damage_states)
 
         elif self.wrapper == "Obs":
-            obs = state.observation
+            local_obs = state.observation
 
         elif self.wrapper == "Filter":
-            obs = state.belief
+            local_obs = state.belief
 
-        return jnp.array([state.timestep / self.time_normalise_factor]), obs
+        return local_obs
 
     def is_truncated(self, timestep: float) -> bool:
         return timestep >= self.time_horizon

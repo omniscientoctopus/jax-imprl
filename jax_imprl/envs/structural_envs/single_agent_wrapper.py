@@ -44,8 +44,12 @@ class SingleAgentWrapper:
 
         return obs, state, reward, terminated, truncated, info
 
+    @partial(jax.jit, static_argnums=(0,))
     def flatten(self, obs):
-        return jnp.concatenate([obs[0], obs[1].flatten()])
+        if self.env.global_obs:
+            return jnp.concatenate([obs[0].flatten(), obs[1].flatten()])
+        else:
+            return obs.flatten()
 
     def split_key(self, key):
         return self.env.split_key(key)
