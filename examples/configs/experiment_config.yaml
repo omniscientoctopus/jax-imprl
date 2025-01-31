@@ -4,6 +4,9 @@ ENV_SETTING: "1-of-4_infinite"
 ENV_KWARGS: 
   reward_shaping: True
 
+# Agent settings
+ALGORITHM: "DDQN"
+
 # wandb settings
 WANDB: False
 WANDB_ENTITY: "shaktimaan"
