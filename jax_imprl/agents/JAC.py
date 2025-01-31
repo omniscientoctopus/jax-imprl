@@ -11,7 +11,8 @@ import distrax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from jax_imprl import MLP, Agent
+from jax_imprl.agents.primitives.agent import Agent, TransitionTuple
+from jax_imprl.agents.primitives.MLP import MLP
 
 # jax.config.update("jax_disable_jit", True)
 

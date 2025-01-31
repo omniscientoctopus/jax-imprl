@@ -17,16 +17,15 @@ import yaml
 import string, random
 from datetime import datetime
 
+os.environ["WANDB__SERVICE_WAIT"] = "300"
+os.environ["JAX_PLATFORMS"] = "cpu"
+
 import jax
 import wandb
 import numpy as np
 import matplotlib.pyplot as plt
 
-import jax_imprl.envs
-from jax_imprl.agents.DDQN import DDQN
-from jax_imprl.agents.JAC import JointActorCritic as JAC
-
-os.environ["WANDB__SERVICE_WAIT"] = "300"
+import jax_imprl.envs, jax_imprl.agents
 
 print(f"Devices: {jax.devices()}")
 
@@ -64,9 +63,7 @@ def get_agent_configs(alg):
 
 
 def get_envs(env_name, env_setting, env_kwargs):
-    env = jax_imprl.envs.make(
-        env_name, env_setting, single_agent=True, **env_kwargs
-    )
+    env = jax_imprl.envs.make(env_name, env_setting, single_agent=True, **env_kwargs)
     eval_env = jax_imprl.envs.make(
         env_name, env_setting, single_agent=True, eval_env=True
     )
@@ -139,6 +136,8 @@ def log_to_wandb(experiment_config, agent_config, logger):
 if __name__ == "__main__":
     # Experiment
     experiment_config = get_experiment_config()
+    experiment_name, checkpoint_path = create_experiment(checkpoint=False)
+    experiment_config["EXPERIMENT_NAME"] = experiment_name
 
     # Environment
     env_name = experiment_config["ENV_NAME"]
@@ -147,12 +146,10 @@ if __name__ == "__main__":
     env, eval_env = get_envs(env_name, env_setting, env_kwargs)
 
     # Agent
-    # alg = "DDQN"
-    alg = "JAC"
-    experiment_name, checkpoint_path = create_experiment(checkpoint=False)
-    experiment_config["EXPERIMENT_NAME"] = experiment_name
-    agent_config = get_agent_configs(alg)[env_name]
-    agent = JAC(
+    algorithm = experiment_config["ALGORITHM"]
+    agent_class = jax_imprl.agents.get_agent_class(algorithm)
+    agent_config = get_agent_configs(algorithm)[env_name]
+    agent = agent_class(
         env,
         agent_config,
         experiment_config,
