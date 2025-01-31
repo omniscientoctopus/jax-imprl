@@ -62,10 +62,14 @@ def get_agent_configs(alg):
     return configs
 
 
-def get_envs(env_name, env_setting, env_kwargs):
+def get_envs(experiment_config):
+    env_name = experiment_config["ENV_NAME"]
+    env_setting = experiment_config["ENV_SETTING"]
+    env_kwargs = experiment_config["ENV_KWARGS"]
+    eval_env_kwargs = experiment_config["EVAL_ENV_KWARGS"]
     env = jax_imprl.envs.make(env_name, env_setting, single_agent=True, **env_kwargs)
     eval_env = jax_imprl.envs.make(
-        env_name, env_setting, single_agent=True, eval_env=True
+        env_name, env_setting, single_agent=True, eval_env=True, **eval_env_kwargs
     )
 
     return env, eval_env
@@ -142,8 +146,7 @@ if __name__ == "__main__":
     # Environment
     env_name = experiment_config["ENV_NAME"]
     env_setting = experiment_config["ENV_SETTING"]
-    env_kwargs = experiment_config["ENV_KWARGS"]
-    env, eval_env = get_envs(env_name, env_setting, env_kwargs)
+    env, eval_env = get_envs(experiment_config)
 
     # Agent
     algorithm = experiment_config["ALGORITHM"]

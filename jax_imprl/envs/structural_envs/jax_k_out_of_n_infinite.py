@@ -48,18 +48,21 @@ class JaxKOutOfN:
         baselines=None,
         eval_env=False,
         wrapper="Filter",
-        reward_shaping: bool = True,
+        train_time_limit: int = 50,
+        test_time_limit: int = 20,
+        time_perception: bool = False,
+        reward_shaping: bool = False,
     ):
 
         self.wrapper = wrapper
         self.reward_shaping = reward_shaping
-        self.global_obs = False  # global observation
+        self.global_obs = time_perception  # global observation
 
         # time limits for training and evaluation
-        train_time_horizon = 50  # training time limit per episode
-        test_time_horizon = 20  # evaluation time limit per episode
-        self.time_normalise_factor = max(train_time_horizon, test_time_horizon) * 2
-        self.time_horizon = test_time_horizon if eval_env else train_time_horizon
+        train_time_limit = 50  # training time limit per episode
+        test_time_limit = 20  # evaluation time limit per episode
+        self.time_normalise_factor = max(train_time_limit, test_time_limit) * 2
+        self.time_horizon = test_time_limit if eval_env else train_time_limit
 
         self.k = env_config["k"]
         self.discount_factor = env_config["discount_factor"]
@@ -429,7 +432,11 @@ class JaxKOutOfN:
         elif self.wrapper == "Filter":
             local_obs = state.belief
 
-        return local_obs
+        global_obs = jnp.array([state.timestep / self.time_normalise_factor])
+        if self.global_obs:
+            return global_obs, local_obs
+        else:
+            return local_obs
 
     def is_truncated(self, timestep: float) -> bool:
         return timestep >= self.time_horizon
