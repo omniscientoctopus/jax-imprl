@@ -48,7 +48,7 @@ class JaxKOutOfN:
         baselines=None,
         eval_env=False,
         wrapper="Filter",
-        reward_shaping: bool = False,
+        reward_shaping: bool = True,
     ):
 
         self.wrapper = wrapper
