@@ -11,7 +11,7 @@ import distrax
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from jax_imprl.agents.primitives.agent import Agent, TransitionTuple
+from jax_imprl.agents.primitives.agent import Agent
 from jax_imprl.agents.primitives.MLP import MLP
 
 # jax.config.update("jax_disable_jit", True)
@@ -230,10 +230,9 @@ class JointActorCritic(Agent):
         weight = jax.lax.stop_gradient(weight)
 
         actor_loss = -true_log_prob * advantage * weight
-        critic_loss = (current_values - target) ** 2
+        critic_loss = weight * (current_values - target) ** 2
 
-        m_actor_loss = jnp.mean(actor_loss)
-        m_critic_loss = jnp.mean(critic_loss)
+        m_actor_loss, m_critic_loss = jnp.mean(actor_loss), jnp.mean(critic_loss)
 
         m_loss = m_actor_loss + m_critic_loss
 
