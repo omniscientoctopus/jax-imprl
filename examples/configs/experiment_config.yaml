@@ -9,7 +9,7 @@ EVAL_ENV_KWARGS:
   reward_shaping: False
 
 # Agent settings
-ALGORITHM: "DDQN"
+ALGORITHM: "JAC"
 
 # wandb settings
 WANDB: False
