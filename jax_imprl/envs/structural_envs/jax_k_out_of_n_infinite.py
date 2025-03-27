@@ -358,9 +358,6 @@ class JaxKOutOfN:
         truncated = self.is_truncated(timestep)
         done = jnp.logical_or(terminated, truncated)
 
-        # info
-        info = {"returns": returns}
-
         next_state = EnvState(
             damage_state=next_damage_state,
             observation=observation,
@@ -368,6 +365,10 @@ class JaxKOutOfN:
             timestep=timestep,
             episode_return=returns * jnp.logical_not(done),
         )
+
+        # info
+        info = {"returns": returns, 
+                "next_obs": self.get_obs(next_state),}
 
         return self.get_obs(next_state), next_state, reward, terminated, truncated, info
 
