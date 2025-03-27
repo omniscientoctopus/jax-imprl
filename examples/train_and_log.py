@@ -17,15 +17,15 @@ import yaml
 import string, random
 from datetime import datetime
 
+os.environ["WANDB__SERVICE_WAIT"] = "300"
+os.environ["JAX_PLATFORMS"] = "cpu"
+
 import jax
 import wandb
 import numpy as np
 import matplotlib.pyplot as plt
 
-import jax_imprl.envs
-from jax_imprl.agents.DDQN import DDQN
-
-os.environ["WANDB__SERVICE_WAIT"] = "300"
+import jax_imprl.envs, jax_imprl.agents
 
 print(f"Devices: {jax.devices()}")
 
@@ -54,20 +54,22 @@ def create_experiment(checkpoint=True):
     return experiment_name, None
 
 
-def get_agent_configs():
+def get_agent_configs(alg):
     script_path = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(script_path, "configs", "DDQN.yaml")
+    config_path = os.path.join(script_path, "configs", f"{alg}.yaml")
     with open(config_path, "r") as f:
         configs = yaml.safe_load(f)
     return configs
 
 
-def get_envs(env_name, env_setting, env_kwargs):
-    env = jax_imprl.envs.make(
-        env_name, env_setting, single_agent=True, **env_kwargs
-    )
+def get_envs(experiment_config):
+    env_name = experiment_config["ENV_NAME"]
+    env_setting = experiment_config["ENV_SETTING"]
+    env_kwargs = experiment_config["ENV_KWARGS"]
+    eval_env_kwargs = experiment_config["EVAL_ENV_KWARGS"]
+    env = jax_imprl.envs.make(env_name, env_setting, single_agent=True, **env_kwargs)
     eval_env = jax_imprl.envs.make(
-        env_name, env_setting, single_agent=True, eval_env=True
+        env_name, env_setting, single_agent=True, eval_env=True, **eval_env_kwargs
     )
 
     return env, eval_env
@@ -138,18 +140,19 @@ def log_to_wandb(experiment_config, agent_config, logger):
 if __name__ == "__main__":
     # Experiment
     experiment_config = get_experiment_config()
+    experiment_name, checkpoint_path = create_experiment(checkpoint=False)
+    experiment_config["EXPERIMENT_NAME"] = experiment_name
 
     # Environment
     env_name = experiment_config["ENV_NAME"]
     env_setting = experiment_config["ENV_SETTING"]
-    env_kwargs = experiment_config["ENV_KWARGS"]
-    env, eval_env = get_envs(env_name, env_setting, env_kwargs)
+    env, eval_env = get_envs(experiment_config)
 
     # Agent
-    experiment_name, checkpoint_path = create_experiment(checkpoint=False)
-    experiment_config["EXPERIMENT_NAME"] = experiment_name
-    agent_config = get_agent_configs()[env_name]
-    agent = DDQN(
+    algorithm = experiment_config["ALGORITHM"]
+    agent_class = jax_imprl.agents.get_agent_class(algorithm)
+    agent_config = get_agent_configs(algorithm)[env_name]
+    agent = agent_class(
         env,
         agent_config,
         experiment_config,

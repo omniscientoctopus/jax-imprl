@@ -65,6 +65,7 @@ class JaxKOutOfN:
         self.k = env_config["k"]
         self.wrapper = wrapper
         self.eval_env = eval_env
+        self.global_obs = True  # global observation
 
         self.time_horizon = env_config["time_horizon"]
         self.discount_factor = env_config["discount_factor"]
@@ -397,19 +398,16 @@ class JaxKOutOfN:
     def get_obs(self, state: EnvState) -> chex.Array:
 
         if self.wrapper == "OneHot":
-            _one_hot = jnp.zeros(
-                (self.n_components, self.n_damage_states), dtype=jnp.uint8
-            )
-            _one_hot = _one_hot.at[self.component_list, state.damage_state].set(1)
-            obs = _one_hot
+            local_obs = jax.nn.one_hot(state.damage_state, self.n_damage_states)
 
         elif self.wrapper == "Obs":
-            obs = state.observation
+            local_obs = state.observation
 
         elif self.wrapper == "Filter":
-            obs = state.belief
+            local_obs = state.belief
 
-        return jnp.array([state.timestep / self.time_horizon]), obs
+        global_obs = jnp.array([state.timestep / self.time_horizon])
+        return global_obs, local_obs
 
     def is_terminal(self, timestep: float) -> bool:
         return timestep >= self.time_horizon

@@ -3,8 +3,6 @@ Based on the tests from the original implementation by the author: https://githu
 
 """
 
-import os
-import yaml
 import pytest
 import numpy as np
 import jax
@@ -42,6 +40,7 @@ def kn_infinite_eval_envs():
             env_setting,
             single_agent=False,
             eval_env=True,
+            reward_shaping=False,
         )
         envs_list.append(env)
     return envs_list
@@ -81,8 +80,8 @@ def ddqn_matrix_game_config():
         "DISCOUNT_FACTOR": 0,
         "NETWORK_CONFIG": {
             "hidden_layers": [64, 64],
-            "optimizer": "Adam",
-            "lr_scheduler": "LinearLR",
+            "optimizer": "adam",
+            "lr_scheduler": "linear",
             "lr_initial": 0.001,
             "lr_final": 0.0001,
             "lr_total_iters": 10_000,
@@ -96,6 +95,58 @@ def ddqn_matrix_game_config():
     }
 
     return agent_config
+
+
+@pytest.fixture
+def jac_matrix_game_config():
+    agent_config = {
+        "MAX_MEMORY_SIZE": 10_000,
+        "BATCH_SIZE": 64,
+        "DISCOUNT_FACTOR": 0,
+        "IMPORTANCE_SAMPLING_WEIGHT_CLIP": 2.0,
+        "ACTOR_CONFIG": {
+            "hidden_layers": [64, 64],
+            "optimizer": "adam",
+            "lr_scheduler": "linear",
+            "lr_initial": 0.001,
+            "lr_final": 0.0001,
+            "lr_total_iters": 10_000,
+        },
+        "CRITIC_CONFIG": {
+            "hidden_layers": [64, 64],
+            "optimizer": "adam",
+            "lr_scheduler": "linear",
+            "lr_initial": 0.005,
+            "lr_final": 0.0005,
+            "lr_total_iters": 10_000,
+        },
+        "EXPLORATION_STRATEGY": {
+            "name": "epsilon_greedy",
+            "initial_value": 1,
+            "final_value": 0.005,
+            "total_iters": 10_000,  # number of episodes to linearly decay epsilon
+        },
+    }
+
+    return agent_config
+
+
+def train_agent(exp_config, agent):
+    seed = exp_config["SEED"]
+    num_runs = exp_config["NUM_RUNS"]
+    key = jax.random.PRNGKey(seed)
+    subkeys = jax.random.split(key, num_runs)
+
+    # Training
+    runner, metrics = jax.block_until_ready(agent.train(subkeys))
+
+    eval_episodes = list(
+        range(0, exp_config["NUM_EPISODES"], exp_config["EVAL_FREQ"])
+    ) + [exp_config["NUM_EPISODES"] - 1]
+
+    eval_means = metrics["eval_mean"][:, eval_episodes]
+
+    return eval_means
 
 
 def test_init(kn_env):
@@ -287,20 +338,34 @@ def test_ddqn_on_climb_game(single_agent_climb_game, ddqn_matrix_game_config):
     # Agent
     agent = DDQN(single_agent_climb_game, ddqn_matrix_game_config, exp_config)
 
-    # Seeds
-    seed = exp_config["SEED"]
-    num_runs = exp_config["NUM_RUNS"]
-    key = jax.random.PRNGKey(seed)
-    subkeys = jax.random.split(key, num_runs)
+    eval_means = train_agent(exp_config, agent)
 
-    # Training
-    runner, metrics = jax.block_until_ready(agent.train(subkeys))
-
-    eval_episodes = list(range(0, exp_config["NUM_EPISODES"], exp_config["EVAL_FREQ"])) + [
-        exp_config["NUM_EPISODES"] - 1
-    ]
-
-    eval_means = metrics["eval_mean"][:, eval_episodes]
+    max_eval_mean = jnp.max(-eval_means)
 
     # all vals should be 275.0
-    assert jnp.allclose(-eval_means, 275.0, rtol=1e-2)
+    assert jnp.allclose(max_eval_mean, 275.0, rtol=1e-2)
+
+
+def test_jac_on_climb_game(single_agent_climb_game, jac_matrix_game_config):
+
+    # Experiment config
+    exp_config = {
+        "SEED": 42,
+        "NUM_RUNS": 1,
+        "NUM_EPISODES": 10_000,
+        "LOGGING_FREQ": 1_000,
+        "EVAL_FREQ": 5_000,
+        "EVAL_EPISODES": 100,
+    }
+
+    from jax_imprl.agents.JAC import JointActorCritic as JAC
+
+    # Agent
+    agent = JAC(single_agent_climb_game, jac_matrix_game_config, exp_config)
+
+    eval_means = train_agent(exp_config, agent)
+
+    max_eval_mean = jnp.max(-eval_means)
+
+    # all vals should be 275.0
+    assert jnp.allclose(max_eval_mean, 275.0, rtol=1e-2)

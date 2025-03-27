@@ -1,17 +1,24 @@
-# Environment settings
-ENV_NAME: "matrix_game"
-ENV_SETTING: "1-of-3_game"
+# Training Environment settings
+ENV_NAME: "k_out_of_n_infinite"
+ENV_SETTING: "1-of-4_infinite"
 ENV_KWARGS: 
-  eval_env: False
+  reward_shaping: True
+
+# Evaluation environment settings
+EVAL_ENV_KWARGS:
+  reward_shaping: False
+
+# Agent settings
+ALGORITHM: "DDQN"
 
 # wandb settings
-WANDB: True
+WANDB: False
 WANDB_ENTITY: "shaktimaan"
 WANDB_PROJECT: "jax_imprl"
 
 # Logging settings
 SEED: 42 # seed to generate random key
-NUM_RUNS: 10 # num independent runs, it splits the random key into multiple keys
+NUM_RUNS: 1 # num independent runs, it splits the random key into multiple keys
 NUM_EPISODES: 50_000 # number of training episodes
 LOGGING_FREQ: 100 # episodes
 EVAL_FREQ: 5_000 # episodes

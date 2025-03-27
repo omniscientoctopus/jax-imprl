@@ -48,17 +48,21 @@ class JaxKOutOfN:
         baselines=None,
         eval_env=False,
         wrapper="Filter",
+        train_time_limit: int = 50,
+        test_time_limit: int = 20,
+        time_perception: bool = False,
         reward_shaping: bool = False,
     ):
 
         self.wrapper = wrapper
         self.reward_shaping = reward_shaping
+        self.global_obs = time_perception  # global observation
 
         # time limits for training and evaluation
-        train_time_horizon = 50  # training time limit per episode
-        test_time_horizon = 20  # evaluation time limit per episode
-        self.time_normalise_factor = max(train_time_horizon, test_time_horizon) * 2
-        self.time_horizon = test_time_horizon if eval_env else train_time_horizon
+        train_time_limit = 50  # training time limit per episode
+        test_time_limit = 20  # evaluation time limit per episode
+        self.time_normalise_factor = max(train_time_limit, test_time_limit) * 2
+        self.time_horizon = test_time_limit if eval_env else train_time_limit
 
         self.k = env_config["k"]
         self.discount_factor = env_config["discount_factor"]
@@ -354,9 +358,6 @@ class JaxKOutOfN:
         truncated = self.is_truncated(timestep)
         done = jnp.logical_or(terminated, truncated)
 
-        # info
-        info = {"returns": returns}
-
         next_state = EnvState(
             damage_state=next_damage_state,
             observation=observation,
@@ -364,6 +365,10 @@ class JaxKOutOfN:
             timestep=timestep,
             episode_return=returns * jnp.logical_not(done),
         )
+
+        # info
+        info = {"returns": returns, 
+                "next_obs": self.get_obs(next_state),}
 
         return self.get_obs(next_state), next_state, reward, terminated, truncated, info
 
@@ -420,19 +425,19 @@ class JaxKOutOfN:
     def get_obs(self, state: EnvState) -> chex.Array:
 
         if self.wrapper == "OneHot":
-            _one_hot = jnp.zeros(
-                (self.n_components, self.n_damage_states), dtype=jnp.uint8
-            )
-            _one_hot = _one_hot.at[self.component_list, state.damage_state].set(1)
-            obs = _one_hot
+            local_obs = jax.nn.one_hot(state.damage_state, self.n_damage_states)
 
         elif self.wrapper == "Obs":
-            obs = state.observation
+            local_obs = state.observation
 
         elif self.wrapper == "Filter":
-            obs = state.belief
+            local_obs = state.belief
 
-        return jnp.array([state.timestep / self.time_normalise_factor]), obs
+        global_obs = jnp.array([state.timestep / self.time_normalise_factor])
+        if self.global_obs:
+            return global_obs, local_obs
+        else:
+            return local_obs
 
     def is_truncated(self, timestep: float) -> bool:
         return timestep >= self.time_horizon
