@@ -129,8 +129,10 @@ class DDQN:
         # Initialize optimizer
         self.optimizer = optax.adam(self.lr_scheduler)
 
-    def init_q_state(self, key):
+    @partial(jax.jit, static_argnums=(0,))
+    def init_runner(self, key):
 
+        # Initialize the Q-network parameters
         key, key_1, key_2 = jax.random.split(key, 3)
 
         obs, _ = self.env.reset(key_1)
@@ -142,14 +144,6 @@ class DDQN:
             params=q_network_params,
             tx=self.optimizer,
         )
-
-        return key, q_state
-
-    @partial(jax.jit, static_argnums=(0,))
-    def init_runner(self, key):
-
-        # Initialize the Q-network parameters
-        key, q_state = self.init_q_state(key)
 
         # Initialize the target network parameters
         target_q_network_params = jax.tree.map(lambda x: jnp.copy(x), q_state.params)
