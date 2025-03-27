@@ -1,8 +1,6 @@
 import jax_imprl.agents
 
 from jax_imprl.agents.DDQN import DDQN
-from jax_imprl.agents.JAC import JointActorCritic as JAC
-
 
 def get_agent_class(algorithm):
     try:
