@@ -3,7 +3,7 @@
 **Core idea**: To train an agent, we defined a *pure* function `update_runner` that takes a `runner` state as input and returns a new `runner` state and a set of metrics. The `runner` contains all the stateful components of the agent, environment, total_timesteps, etc. required for training. Instead of using a for loop, we use `lax.scan` to iterate over the `update_runner` function for a fixed number of time steps `num_steps`:
 
 ```python
-runner = init_runner(env)
+runner = init_runner(key)
 runner, metrics = lax.scan(update_runner, runner, length=num_steps)
 ```
 
@@ -20,7 +20,7 @@ class DDQN:
     def __init__(self):
         # initialise replay buffer, Q-network, target network, etc.
     
-    def init_runner(self, env):
+    def init_runner(self, key):
         # initialise runner state
         runner = (q_params, target_params, replay_buffer_state, env_state, total_timesteps)
         return runner
@@ -53,7 +53,7 @@ class DDQN:
         return runner, metrics
 
     def train(self, key):
-        runner = self.init_runner(env)
+        runner = self.init_runner(key)
         runner, metrics = lax.scan(update_runner, runner, length=10_000)
         return runner, metrics
 ```
