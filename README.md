@@ -1,9 +1,9 @@
-# jax-imprl
+# jax-imprl 🚀
 A JAX accelerated version of IMPRL (Inspection and Maintenance Planning with Reinforcement Learning), a library for applying reinforcement learning to inspection and maintenance planning of deteriorating engineering systems.
 
-## Installation
+## Installation 📦
 
-### 1. Install uv 
+### 1. Install uv
 
 <details>
 <summary>Why install uv?</summary>
@@ -73,6 +73,7 @@ If resolution fails, relax version ranges and retry.
 You can run unit tests to verify that the installation was successful.
 
 ```bash
+uv sync --group dev # ensure dev dependencies are installed
 pytest -v tests
 ```
 
@@ -85,21 +86,21 @@ wandb login
 # <enter wandb API key>
 ```
 
-## Docker (Optional)
+## Docker 🐳
 
-You can use the following Docker image to run the code in a containerized environment.
+If you want to run the code in a containerized environment, you can use the following Docker image and the previous installation steps.
 
 ```bash
 docker pull nvidia/cuda
 ```
 
-In case you don't have accesss to NVIDIA GPUs, you can rent a cloud instance here, and load the above Docker image. For example, [vast.ai](https://vast.ai) at ~$0.35/hour ([pricing](https://vast.ai/#pricing))
+In case you don't have accesss to NVIDIA GPUs, you can rent a cloud instance and load the above Docker image. For example, [vast.ai](https://vast.ai) at ~$0.30/hour ([pricing](https://vast.ai/#pricing))
 
 ```bash
 https://cloud.vast.ai/?ref_id=113803&creator_id=113803&name=JAX%2BRL
 ```
 
-## Related Work
+## Related Work 🔗
 
 - [IMPRL](https://github.com/omniscientoctopus/imprl): small-scale k-out-of-n environments with upto 5 components.
 
@@ -108,7 +109,7 @@ https://cloud.vast.ai/?ref_id=113803&creator_id=113803&name=JAX%2BRL
     - Environments: (Correlated and uncorrelated) k-out-of-n systems and offshore wind structural systems.
     - RL solvers: Provides wrappers for interfacing with several (MA)RL libraries such as [EPyMARL](https://github.com/uoe-agents/epymarl), [RLlib](imp_marl/imp_wrappers/examples/rllib/rllib_example.py), [MARLlib](imp_marl/imp_wrappers/marllib/marllib_wrap_ma_struct.py) etc.
 
-## Acknowledgements
+## Acknowledgements 🙏
 
 This repository is inspired by the following projects:
 
