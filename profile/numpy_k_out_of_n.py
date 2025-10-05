@@ -1,5 +1,4 @@
 import numpy as np
-import gym
 
 
 class KOutOfN:
@@ -117,32 +116,6 @@ class KOutOfN:
 
             # inspection: inspection
             self.observation_model[c, 2, :, :] = self.inspection_model[c]
-
-        # Gym Spaces
-        self.state_space = gym.spaces.Tuple(
-            (
-                # normalized time
-                gym.spaces.Box(0, 1, shape=(1,)),
-                # damage states
-                gym.spaces.MultiDiscrete(
-                    np.ones(self.n_components, dtype=int) * self.n_damage_states
-                ),
-            )
-        )
-        self.observation_space = gym.spaces.Tuple(
-            (
-                # normalized time
-                gym.spaces.Box(0, 1, shape=(1,)),
-                # belief over damage states
-                gym.spaces.Box(
-                    low=0, high=1, shape=(self.n_damage_states, self.n_components)
-                ),
-            )
-        )
-
-        self.action_space = gym.spaces.MultiDiscrete(
-            np.ones(self.n_components, dtype=int) * self.n_comp_actions
-        )
 
         self.state = self.reset()
 
@@ -296,8 +269,5 @@ class KOutOfN:
 
         return (np.array([self.norm_time]), self.belief)
 
-    def _get_state(self) -> tuple[np.array, np.array]:
-
-        _state = (np.array([self.norm_time]), self.damage_state)
-
-        return gym.spaces.utils.flatten(self.state_space, _state)
+    def _get_state(self) -> np.array:
+        return self.damage_state

@@ -41,13 +41,24 @@ conda activate jax_imprl_env
 ### 3. Install the dependencies (uv)
 
 ```bash
-# Install base dependencies, creating uv.lock
+# CPU (default): install base dependencies, creating uv.lock
 uv sync
 
-# Optional: include extras and/or dev tools
-# Dev tools are in the "dev" dependency group
+# GPU (optional): add the GPU group to enable CUDA-backed JAX
+uv sync --group gpu
+
+# Dev tools (optional): formatter, tests, etc.
 uv sync --group dev
 ```
+
+<details>
+<summary>GPU notes</summary>
+
+- The `gpu` group installs `jax[cuda12_pip]` (CUDA 12 via pip packages) on Linux with NVIDIA GPUs.
+- If you maintain your own local CUDA 12 install, you can switch to `jax[cuda12_local]` by editing the `gpu` group in `pyproject.toml`.
+- macOS uses the CPU build of JAX by default.
+
+</details>
 
 <details>
 <summary>Installing additional packages</summary>
