@@ -4,10 +4,10 @@ This is an example of how to use `jax.lax.scan` to rollout an environment.
 """
 
 import time
+
 import chex
 import jax
 import jax.numpy as jnp
-from typing import Any
 
 import jax_imprl.envs
 

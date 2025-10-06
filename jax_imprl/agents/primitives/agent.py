@@ -2,11 +2,10 @@ from functools import partial
 from typing import Any
 
 import chex
-import jax
-import optax
-
-import jax.numpy as jnp
 import flashbax as fbx
+import jax
+import jax.numpy as jnp
+import optax
 from flax.training.train_state import TrainState
 
 from jax_imprl.agents.modules.schedulers import LinearScheduler

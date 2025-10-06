@@ -3,12 +3,11 @@ Based on the tests from the original implementation by the author: https://githu
 
 """
 
-import os
-import yaml
-import pytest
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
+import pytest
+
 import jax_imprl.envs
 from jax_imprl.runner import scanned_rollout
 

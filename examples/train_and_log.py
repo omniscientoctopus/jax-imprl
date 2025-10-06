@@ -11,16 +11,17 @@ Remarks:
 - Currently checkpointing is supported only for num_runs = 1.
 """
 
-import os
 import math
-import yaml
-import string, random
+import os
+import random
+import string
 from datetime import datetime
 
 import jax
-import wandb
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import wandb
+import yaml
 
 import jax_imprl.envs
 from jax_imprl.agents.DDQN import DDQN

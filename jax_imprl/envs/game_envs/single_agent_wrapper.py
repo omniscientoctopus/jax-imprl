@@ -1,11 +1,9 @@
 import itertools
-
-import numpy as np
-import jax
-import chex
 from functools import partial
-import jax.numpy as jnp
 
+import chex
+import jax
+import jax.numpy as jnp
 from gymnax.environments import spaces
 
 

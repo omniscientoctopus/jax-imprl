@@ -1,2 +1,2 @@
-from .agents.primitives.agent import Agent, TransitionTuple, EvalRunnerState
+from .agents.primitives.agent import Agent, EvalRunnerState, TransitionTuple
 from .agents.primitives.MLP import MLP
