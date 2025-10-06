@@ -292,7 +292,8 @@ if __name__ == "__main__":
         mean_jax_vmap_returns,
     ]
     print(f"Mean returns: {round_list(mean_list)}")
-    rel_error = lambda x, y: abs(x - y) * 100 / x
+    def rel_error(x, y):
+        return abs(x - y) * 100 / x
     rel_error_numpy_mp = rel_error(mean_numpy_returns, mean_numpy_mp_returns)
     rel_error_jax_for_loop = rel_error(mean_numpy_returns, mean_jax_for_loop_returns)
     rel_error_jax_scan = rel_error(mean_numpy_returns, mean_jax_scan_returns)
