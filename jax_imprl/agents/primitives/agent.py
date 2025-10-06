@@ -122,8 +122,10 @@ class Agent:
 
     def is_time_to_evaluate(self, ep, done):
 
-        cond_1 = lambda ep: (ep % self.eval_freq) == 0
-        cond_2 = lambda ep: ep == (self.num_episodes - 1)
+        def cond_1(ep):
+            return (ep % self.eval_freq) == 0
+        def cond_2(ep):
+            return ep == (self.num_episodes - 1)
 
         c1 = jnp.logical_or(cond_1(ep), cond_2(ep))
 
