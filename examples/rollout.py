@@ -2,8 +2,8 @@ import time
 
 import jax
 import jax.numpy as jnp
-
 import jax_imprl.envs
+
 
 # Environment
 ENV_NAME = "k_out_of_n_infinite"

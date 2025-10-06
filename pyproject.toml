@@ -1,59 +1,40 @@
-[project]
+[tool.poetry]
 name = "jax-imprl"
 version = "0.1.0"
 description = "A jax accelerated library for applying reinforcement learning to inspection and maintenance planning of deteriorating engineering systems."
+authors = ["Prateek Bhustali <p.bhustali@tudelft.nl>"]
 readme = "README.md"
-requires-python = ">=3.9,<3.10"
-authors = [
-  { name = "Prateek Bhustali", email = "p.bhustali@tudelft.nl" }
-]
-dependencies = [
-  "numpy>=1.26.2,<2.0.0",
-  "pyyaml>=6.0.1,<6.1.0",
-  "notebook>=7.1.2,<8.0.0",
-  
-  # jax and related libraries (CPU by default)
-  "jax>=0.4.28,<0.5.0",
-  "chex>=0.1.84,<0.2.0",
-  "gymnax>=0.0.1,<0.1.0",
-  "flashbax>=0.1.2,<0.2.0",
 
-  # logging and visualization
-  "wandb>=0.16.4,<0.17.0",
-  "matplotlib>=3.8.2,<4.0.0"
-]
+[tool.poetry.dependencies]
+python="~3.9"
+numpy="^1.26.2"
+pyyaml="~6.0.1"
+gym="^0.23.1"
+notebook="^7.1.2"
+jax=[{extras = ["cpu"], version = "^0.4.28", platform="darwin"},
+    {extras = ["cuda"], version = "^0.4.28", platform="linux"}]
+chex="~0.1.84"
+gymnax="~0.0.1"
+distrax="~0.1.5"
+flashbax="~0.1.2"
 
-[dependency-groups]
-dev = [
-  "pytest>=8.0.1,<9.0.0",
-  "black>=24.3.0,<25.0.0",
-  "ruff>=0.6.0,<1.0.0",
-]
-gpu = [
-  # Enable GPU support via pip-provisioned CUDA 12 packages
-  # If you have a local CUDA install, you can switch to: jax[cuda12_local]
-  "jax[cuda12_pip]>=0.4.28,<0.5.0",
-]
+[tool.poetry.group.logging]
+optional = false
+[tool.poetry.group.logging.dependencies]
+wandb="~0.16.4"
+
+[tool.poetry.group.visualisation]
+optional = false
+[tool.poetry.group.visualisation.dependencies]
+matplotlib="^3.8.2"
+seaborn="^0.13.2"
+
+[tool.poetry.group.dev]
+optional = true
+[tool.poetry.group.dev.dependencies]
+pytest="~8.0.1"
+black="^24.3.0"
 
 [build-system]
-requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["jax_imprl*"]
-
-[tool.ruff]
-# Keep in sync with Black's default
-line-length = 88
-target-version = "py39"
-
-[tool.ruff.lint]
-# Core rules: pycodestyle (E), pyflakes (F), isort (I)
-select = ["E", "F", "I"]
-# Defer long-line handling to Black
-ignore = ["E501"]
-
-[tool.ruff.lint.isort]
-combine-as-imports = true
-known-first-party = ["jax_imprl"]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

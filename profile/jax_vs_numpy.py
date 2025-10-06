@@ -1,14 +1,15 @@
+import time
+import yaml
 import itertools
 import multiprocessing as mp
-import time
 
+import numpy as np
 import jax
 import jax.numpy as jnp
-import numpy as np
-import yaml
-from numpy_k_out_of_n import KOutOfN as numpy_k_out_of_n
 
 import jax_imprl.envs
+from numpy_k_out_of_n import KOutOfN as numpy_k_out_of_n
+
 
 ACTIONS = [0, 1, 2, 0, 1]
 
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     ENV_SETTING = "5-of-5"
 
     ############################# NUMPY ################################
-    config_path = f"../jax_imprl/envs/structural_envs/env_configs/{ENV_SETTING}.yaml"
+    config_path = f"../jax_imprl/structural_envs/env_configs/{ENV_SETTING}.yaml"
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
     numpy_env = numpy_k_out_of_n(config, seed=12345)
@@ -153,8 +154,8 @@ if __name__ == "__main__":
 
     ############################ JAX (scan) ############################
 
-
     import chex
+    from functools import partial
 
     @chex.dataclass(frozen=True)
     class Runner:
@@ -226,56 +227,28 @@ if __name__ == "__main__":
             evals = metrics["returns"] * metrics["dones"]
             jax_scan_returns = evals[jnp.nonzero(evals)]
 
-    ########################## JAX VMAP + SCAN ################################
-    jax_vmap_timings = []
-    jax_vmap_returns = []
-    for NUM_EPISODES in experiments:
-        key, key_ = jax.random.split(key)
-        keys = jax.random.split(key_, NUM_EPISODES)
-        start_jax_ = time.time()
-        runners, metrics = jax.block_until_ready(
-            jax.vmap(jax.jit(scanned_rollout, static_argnums=(1)), in_axes=(0, None))(
-                keys, 1
-            )
-        )
-
-        end_jax_ = time.time()
-        jax_vmap_timings.append(end_jax_ - start_jax_)
-
-        if NUM_EPISODES == store_returns_for:
-            evals = metrics["returns"] * metrics["dones"]
-            jax_vmap_returns = evals[jnp.nonzero(evals)]
-
-    main_end = time.time()
-    print(f"Total time: {main_end - start:.1f} s")
-
     ########################## Print results ###########################
     print(f"NumPy (for loop): {round_list(numpy_timings)}")
     print(f"NumPy (multiprocessing): {round_list(numpy_mp_timings)}")
     print(f"Jax (for loop): {round_list(jax_for_loop_timings)}")
     print(f"Jax (scan): {round_list(jax_scan_timings)}")
-    print(f"Jax (vmap + scan): {round_list(jax_vmap_timings)}")
 
     def compare(list1, list2):
         return [l1 / l2 for l1, l2 in zip(list1, list2)]
 
     speedup_for_loop = compare(numpy_timings, jax_for_loop_timings)
     speedup_scan = compare(numpy_timings, jax_scan_timings)
-    speedup_vmap = compare(numpy_timings, jax_vmap_timings)
     print("")
     print("Speedups wrt NumPy (for loop):")
     print(f"Speedup (Jax): {round_list(speedup_for_loop)}")
     print(f"Speedup (Jax scan): {round_list(speedup_scan)}")
-    print(f"Speedup (Jax vmap + scan): {round_list(speedup_vmap)}")
 
     speedup_for_loop = compare(numpy_mp_timings, jax_for_loop_timings)
     speedup_scan = compare(numpy_mp_timings, jax_scan_timings)
-    speedup_vmap = compare(numpy_mp_timings, jax_vmap_timings)
     print("")
     print("Speedups wrt NumPy (multiprocessing):")
     print(f"Speedup (Jax): {round_list(speedup_for_loop)}")
     print(f"Speedup (Jax scan): {round_list(speedup_scan)}")
-    print(f"Speedup (Jax vmap + scan): {round_list(speedup_vmap)}")
 
     # Mean returns
     print("")
@@ -283,26 +256,18 @@ if __name__ == "__main__":
     mean_numpy_mp_returns = np.mean(numpy_mp_returns)
     mean_jax_for_loop_returns = np.mean(jax_for_loop_returns)
     mean_jax_scan_returns = np.mean(jax_scan_returns).item()
-    mean_jax_vmap_returns = np.mean(jax_vmap_returns).item()
     mean_list = [
         mean_numpy_returns,
         mean_numpy_mp_returns,
         mean_jax_for_loop_returns,
         mean_jax_scan_returns,
-        mean_jax_vmap_returns,
     ]
     print(f"Mean returns: {round_list(mean_list)}")
     rel_error = lambda x, y: abs(x - y) * 100 / x
     rel_error_numpy_mp = rel_error(mean_numpy_returns, mean_numpy_mp_returns)
     rel_error_jax_for_loop = rel_error(mean_numpy_returns, mean_jax_for_loop_returns)
     rel_error_jax_scan = rel_error(mean_numpy_returns, mean_jax_scan_returns)
-    rel_error_jax_vmap = rel_error(mean_numpy_returns, mean_jax_vmap_returns)
-    _list = [
-        rel_error_numpy_mp,
-        rel_error_jax_for_loop,
-        rel_error_jax_scan,
-        rel_error_jax_vmap,
-    ]
+    _list = [rel_error_numpy_mp, rel_error_jax_for_loop, rel_error_jax_scan]
     print(f"Relative error mean returns wrt NumPy: {round_list(_list)}")
 
     ########################## Plot results ############################
@@ -320,15 +285,7 @@ if __name__ == "__main__":
     )
     ax[0].plot(experiments, jax_for_loop_timings, ".-", label="Jax (for loop)")
     ax[0].plot(experiments, jax_scan_timings, ".-", label="Jax (scan)")
-    ax[0].plot(experiments, jax_vmap_timings, ".-", label="Jax (vmap + scan)")
 
-    ax[0].set_yscale("log")
-    ax[0].set_yticks(
-        [1e-2, 1e-1, 1e0, 1e1, 1e2], ["0.01 s", "0.1 s", "1 s", "10 s", "100 s"]
-    )
-    ax[0].set_xscale("log")
-    ax[0].set_xticks(experiments, [str(x) for x in experiments])
-    ax[0].set_title("Time taken vs Number of episodes")
     ax[0].set_xlabel("Number of episodes")
     ax[0].set_ylabel("Time (s)")
     ax[0].legend()
@@ -354,16 +311,9 @@ if __name__ == "__main__":
         fill=False,
         edgecolor="tab:green",
     )
-    ax[1].hist(
-        jax_vmap_returns,
-        label="Jax (vmap + scan)",
-        alpha=0.5,
-        fill=False,
-        edgecolor="tab:red",
-    )
 
     ax[1].set_xlabel("Return")
-    ax[1].set_title(f"Returns for {store_returns_for:,} episodes")
+    ax[1].set_title(f"Returns for {store_returns_for} episodes")
     ax[1].legend()
 
     plt.show()

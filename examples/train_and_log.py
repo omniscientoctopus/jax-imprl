@@ -11,20 +11,19 @@ Remarks:
 - Currently checkpointing is supported only for num_runs = 1.
 """
 
-import math
 import os
-import random
-import string
+import math
+import yaml
+import string, random
 from datetime import datetime
 
 os.environ["WANDB__SERVICE_WAIT"] = "300"
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
-import matplotlib.pyplot as plt
-import numpy as np
 import wandb
-import yaml
+import numpy as np
+import matplotlib.pyplot as plt
 
 import jax_imprl.envs, jax_imprl.agents
 

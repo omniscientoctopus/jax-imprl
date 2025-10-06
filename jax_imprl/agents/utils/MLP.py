@@ -1,7 +1,8 @@
 from typing import Sequence
 
-import flax.linen as nn
 import jax.numpy as jnp
+
+import flax.linen as nn
 
 
 class MLP(nn.Module):

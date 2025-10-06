@@ -1,7 +1,6 @@
 # Module to make structural environments
 
 import os
-
 import yaml
 
 
@@ -23,7 +22,7 @@ def make(name, setting=None, single_agent=True, **kwargs):
         env_class = getattr(module, "JaxKOutOfN")
 
         rel_path_config = f"structural_envs/env_configs/{setting}.yaml"
-        rel_path_baselines = "structural_envs/baselines.yaml"
+        rel_path_baselines = f"structural_envs/baselines.yaml"
 
     elif name == "matrix_game":
 
@@ -35,7 +34,7 @@ def make(name, setting=None, single_agent=True, **kwargs):
         env_class = getattr(module, "MatrixGame")
 
         rel_path_config = f"game_envs/env_configs/{setting}.yaml"
-        rel_path_baselines = "game_envs/baselines.yaml"
+        rel_path_baselines = f"game_envs/baselines.yaml"
 
     pwd = os.path.dirname(__file__)
 

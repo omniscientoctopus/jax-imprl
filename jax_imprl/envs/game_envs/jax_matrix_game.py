@@ -4,8 +4,10 @@ from typing import Tuple
 import chex
 import jax
 import jax.numpy as jnp
+import numpy as np
 from flax import struct
 from gymnax.environments import spaces
+from jax import vmap
 
 
 @struct.dataclass
