@@ -27,6 +27,7 @@ dependencies = [
 dev = [
   "pytest>=8.0.1,<9.0.0",
   "black>=24.3.0,<25.0.0",
+  "ruff>=0.6.0,<1.0.0",
 ]
 gpu = [
   # Enable GPU support via pip-provisioned CUDA 12 packages
@@ -41,3 +42,18 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["jax_imprl*"]
+
+[tool.ruff]
+# Keep in sync with Black's default
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+# Core rules: pycodestyle (E), pyflakes (F), isort (I)
+select = ["E", "F", "I"]
+# Defer long-line handling to Black
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["jax_imprl"]

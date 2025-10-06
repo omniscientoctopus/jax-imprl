@@ -1,15 +1,14 @@
-import time
-import yaml
 import itertools
 import multiprocessing as mp
+import time
 
-import numpy as np
 import jax
 import jax.numpy as jnp
-
-import jax_imprl.envs
+import numpy as np
+import yaml
 from numpy_k_out_of_n import KOutOfN as numpy_k_out_of_n
 
+import jax_imprl.envs
 
 ACTIONS = [0, 1, 2, 0, 1]
 
@@ -154,8 +153,8 @@ if __name__ == "__main__":
 
     ############################ JAX (scan) ############################
 
+
     import chex
-    from functools import partial
 
     @chex.dataclass(frozen=True)
     class Runner:
