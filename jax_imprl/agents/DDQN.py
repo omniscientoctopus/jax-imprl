@@ -1,18 +1,17 @@
-import jax
-import jax.numpy as jnp
 from functools import partial
 from typing import Any
 
 import chex
 import flax
+import jax
+import jax.numpy as jnp
 import orbax
 import optax
 import flashbax as fbx
 from flax.training import orbax_utils
 from flax.training.train_state import TrainState
 
-from jax_imprl.agents.utils.schedulers import LinearScheduler
-from jax_imprl.agents.utils.MLP import MLP
+from jax_imprl import MLP, Agent, EvalRunnerState, TransitionTuple
 
 # jax.config.update("jax_disable_jit", True)
 

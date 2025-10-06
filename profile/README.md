@@ -1,31 +1,28 @@
 # JAX vs NumPy
 
-```python
-experiments = [1, 10, 100, 1_000, 10_000] # episodes
-```
+## JAX vs NumPy Performance Comparison ⚡
 
-```bash
->> python jax_vs_numpy.py
-Time taken for each experiment (in seconds):
-NumPy (for loop): [0.01, 0.05, 0.54, 5.39, 54.84]
-NumPy (multiprocessing): [1.84, 1.63, 1.49, 2.38, 11.19]
-Jax (for loop): [0.52, 0.04, 0.39, 3.87, 38.54]
-Jax (scan): [0.28, 0.28, 0.28, 0.34, 0.79]
+### Environment Rollouts
 
-Speedups wrt NumPy (for loop):
-Speedup (Jax): [0.01, 1.33, 1.39, 1.39, 1.42]
-Speedup (Jax scan): [0.02, 0.19, 1.9, 15.86, 69.36]
+We compare the performance of JAX with NumPy (multiprocessing) for simulating rollouts for a k-out-of-n system with 5 components (agents), where each episode consists of 50 time steps. For 10,000 episodes, JAX (solid lines) achieves up to **~14x** speedup over NumPy (dashed lines).
 
-Speedups wrt NumPy (multiprocessing):
-Speedup (Jax): [3.51, 41.01, 3.82, 0.62, 0.29]
-Speedup (Jax scan): [6.5, 5.81, 5.24, 7.01, 14.16]
+![Runtime and Speedup vs NumPy](profile/jax_vs_numpy.svg)
 
-Mean returns: [-92739.74, -92771.94, -92533.83, -92670.86]
-Relative error mean returns wrt NumPy: [-0.03, -0.22, -0.07]
-```
+| # Episodes | NumPy (for loop) [s] | NumPy (mp) [s] | JAX (scan) [s] | Speedup: NumPy (mp) vs. JAX (scan) |
+|:-----------:|---------------------:|---------------:|-------------------:|---------------:|
+| 1           | 0.01 | 1.18 | 0.27 | 4.39× |
+| 10          | 0.05 | 1.2 | 0.24 | 5.01× |
+| 100         | 0.51 | 1.3 | 0.24 | 5.41× |
+| 1,000       | 5.09 | 2.09| 0.28 | 7.4× |
+| 10,000      | 51.94 | 10.02  | 0.72 | **13.88×** |
+
+### RL Training
+
+We further benchmark RL training on variants of the k-out-of-n system. JAX achieves over **5x - 12x faster** training throughput than the equivalent PyTorch implementation running on 8 CPU cores.
+
+| Environment | Agents | Episodes | Timesteps | MBP (JAX) [s] | MBP (PyTorch 8 CPUs) [s] | Speedup |
+|:-------------|:-------:|:----------:|:-----------:|---------------:|--------------------------:|:--------:|
+| `k_n_infinite` | 4 | 50,000 | 2.5 M | 403.9 s (0:06:44) | 4883.6 s (1:21:24) | **12×** |
+| `kn_50` | 5 | 100,000 | 5 M | 1781 s (0:29:41) | 9571.8 s (2:39:32) | **5.4×** |
 
 Hardware specs: Apple M1 Pro, 16GB RAM
-
-Speedups and distribution of returns over 10k episodes:
-
-![alt text](jax_vs_numpy.png)
